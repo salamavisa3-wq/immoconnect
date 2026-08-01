@@ -40,7 +40,7 @@ cp .env.example .env
 npm start
 ```
 
-L'API démarre sur `http://localhost:4000`.
+L'API démarre sur `http://localhost:3001`.
 
 > **Sans clés PayTech configurées**, le système bascule automatiquement en
 > **mode démo** : une page de simulation de paiement permet de tester tout
