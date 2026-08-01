@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modération — ImmoConnect</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="entete">
+  <div class="conteneur barre">
+    <a href="index.html" class="logo"><span class="pastille"></span>ImmoConnect <span style="color:var(--or);font-size:0.7rem;">ADMIN</span></a>
+    <nav class="nav"><a href="annonces.html">Site public</a></nav>
+    <button id="btn-deconnexion" class="bouton bouton-fantome">Se déconnecter</button>
+  </div>
+</header>
+
+<section class="section">
+  <div class="conteneur">
+    <h2>Annonces en attente de validation</h2>
+    <div id="liste-attente">Chargement...</div>
+  </div>
+</section>
+
+<script src="js/api.js"></script>
+<script>
+if (!Session.estConnecte()) window.location.href = "connexion.html";
+
+document.getElementById("btn-deconnexion").addEventListener("click", () => {
+  Session.clear();
+  window.location.href = "index.html";
+});
+
+async function charger() {
+  const conteneur = document.getElementById("liste-attente");
+  try {
+    const biens = await appelApi("/biens/admin/en-attente");
+    if (biens.length === 0) {
+      conteneur.innerHTML = `<p style="color:var(--texte-clair);">Aucune annonce en attente.</p>`;
+      return;
+    }
+    conteneur.innerHTML = `
+      <table class="table-biens">
+        <thead><tr><th>Titre</th><th>Type</th><th>Ville</th><th>Prix</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${biens.map(b => `
+            <tr>
+              <td>${b.titre}</td>
+              <td>${LIBELLES_TYPE[b.type_bien] || b.type_bien}</td>
+              <td>${b.ville}</td>
+              <td>${formaterPrix(b.prix)}</td>
+              <td style="display:flex;gap:8px;">
+                <button class="bouton bouton-primaire" style="padding:6px 12px;font-size:0.8rem;" onclick="modererAnnonce(${b.id}, 'publie')">Valider</button>
+                <button class="bouton bouton-fantome" style="padding:6px 12px;font-size:0.8rem;color:var(--rouge-alerte);border-color:var(--rouge-alerte);" onclick="modererAnnonce(${b.id}, 'refuse')">Refuser</button>
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>`;
+  } catch (err) {
+    conteneur.innerHTML = `<p style="color:var(--rouge-alerte);">${err.message}</p>`;
+  }
+}
+
+async function modererAnnonce(id, statut) {
+  try {
+    await appelApi(`/biens/admin/${id}/statut`, { method: "PATCH", body: JSON.stringify({ statut }) });
+    charger();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+charger();
+</script>
+
+</body>
+</html>

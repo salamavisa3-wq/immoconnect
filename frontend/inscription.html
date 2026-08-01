@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inscription propriétaire — ImmoConnect</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="entete">
+  <div class="conteneur barre">
+    <a href="index.html" class="logo"><span class="pastille"></span>ImmoConnect</a>
+    <nav class="nav"><a href="annonces.html">Toutes les annonces</a><a href="connexion.html">Connexion</a></nav>
+    <a href="connexion.html" class="bouton bouton-fantome">J'ai déjà un compte</a>
+  </div>
+</header>
+
+<div class="carte-formulaire" id="carte-etape-1">
+  <h2 class="mt-0">Créer votre compte propriétaire</h2>
+  <p class="aide" style="margin-bottom:22px;">Étape 1/2 — Vos informations. L'étape suivante est le paiement des frais d'inscription (5000 FCFA).</p>
+
+  <div id="zone-erreur"></div>
+
+  <form id="form-inscription">
+    <div class="champ">
+      <label>Nom complet</label>
+      <input type="text" name="nom_complet" required placeholder="Ex : Fatou Ndiaye">
+    </div>
+    <div class="champ">
+      <label>Email</label>
+      <input type="email" name="email" required placeholder="vous@exemple.com">
+    </div>
+    <div class="grille-2">
+      <div class="champ">
+        <label>Téléphone</label>
+        <input type="tel" name="telephone" required placeholder="+221 77 000 00 00">
+      </div>
+      <div class="champ">
+        <label>Ville</label>
+        <input type="text" name="ville" placeholder="Dakar, Touba, Thiès...">
+      </div>
+    </div>
+    <div class="champ">
+      <label>Mot de passe</label>
+      <input type="password" name="mot_de_passe" required minlength="6" placeholder="6 caractères minimum">
+    </div>
+    <button type="submit" class="bouton bouton-primaire bouton-plein-largeur">Continuer vers le paiement</button>
+  </form>
+</div>
+
+<div class="carte-formulaire" id="carte-etape-2" style="display:none;">
+  <h2 class="mt-0">Réglez vos frais d'inscription</h2>
+  <p class="aide" style="margin-bottom:22px;">Étape 2/2 — Paiement unique et définitif pour activer votre compte propriétaire.</p>
+
+  <div class="bandeau-tarif" style="padding:22px 24px;margin-bottom:22px;">
+    <div>
+      <div class="montant" style="font-size:2rem;">5 000 <span>FCFA</span></div>
+      <div style="font-size:0.85rem;opacity:0.9;">Orange Money · Wave · Carte bancaire</div>
+    </div>
+  </div>
+
+  <button id="btn-payer" class="bouton bouton-primaire bouton-plein-largeur">Payer 5000 FCFA maintenant</button>
+  <p id="statut-paiement" class="aide centre" style="margin-top:16px;"></p>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+const zoneErreur = document.getElementById("zone-erreur");
+const carte1 = document.getElementById("carte-etape-1");
+const carte2 = document.getElementById("carte-etape-2");
+
+function afficherErreur(msg) {
+  zoneErreur.innerHTML = `<div class="message-erreur">${msg}</div>`;
+}
+
+document.getElementById("form-inscription").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  zoneErreur.innerHTML = "";
+  const donnees = Object.fromEntries(new FormData(e.target));
+
+  try {
+    const reponse = await appelApi("/auth/register", { method: "POST", body: JSON.stringify(donnees) });
+    Session.setToken(reponse.token);
+    Session.setUser(reponse.user);
+    carte1.style.display = "none";
+    carte2.style.display = "block";
+  } catch (err) {
+    afficherErreur(err.message);
+  }
+});
+
+document.getElementById("btn-payer").addEventListener("click", async () => {
+  const bouton = document.getElementById("btn-payer");
+  const statutEl = document.getElementById("statut-paiement");
+  bouton.disabled = true;
+  bouton.textContent = "Préparation du paiement...";
+
+  try {
+    const { url_paiement, reference, mode } = await appelApi("/payments/initier", { method: "POST" });
+    statutEl.textContent = mode === "demo"
+      ? "Mode démo actif (clés PayTech non configurées) — redirection vers la page de simulation..."
+      : "Redirection vers la page de paiement sécurisée...";
+    setTimeout(() => { window.location.href = url_paiement; }, 900);
+  } catch (err) {
+    bouton.disabled = false;
+    bouton.textContent = "Payer 5000 FCFA maintenant";
+    statutEl.textContent = "";
+    afficherErreur(err.message);
+  }
+});
+</script>
+
+</body>
+</html>

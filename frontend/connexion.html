@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connexion — ImmoConnect</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="entete">
+  <div class="conteneur barre">
+    <a href="index.html" class="logo"><span class="pastille"></span>ImmoConnect</a>
+    <nav class="nav"><a href="annonces.html">Toutes les annonces</a></nav>
+    <a href="inscription.html" class="bouton bouton-fantome">Créer un compte</a>
+  </div>
+</header>
+
+<div class="carte-formulaire">
+  <h2 class="mt-0">Connexion</h2>
+  <p class="aide" style="margin-bottom:22px;">Accédez à votre tableau de bord propriétaire.</p>
+
+  <div id="zone-erreur"></div>
+
+  <form id="form-connexion">
+    <div class="champ">
+      <label>Email</label>
+      <input type="email" name="email" required>
+    </div>
+    <div class="champ">
+      <label>Mot de passe</label>
+      <input type="password" name="mot_de_passe" required>
+    </div>
+    <button type="submit" class="bouton bouton-primaire bouton-plein-largeur">Se connecter</button>
+  </form>
+  <p class="aide centre" style="margin-top:18px;">Pas encore de compte ? <a href="inscription.html" style="color:var(--terre);font-weight:600;">Inscrivez-vous</a></p>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+document.getElementById("form-connexion").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const zoneErreur = document.getElementById("zone-erreur");
+  zoneErreur.innerHTML = "";
+  const donnees = Object.fromEntries(new FormData(e.target));
+
+  try {
+    const reponse = await appelApi("/auth/login", { method: "POST", body: JSON.stringify(donnees) });
+    Session.setToken(reponse.token);
+    Session.setUser(reponse.user);
+    window.location.href = "tableau-de-bord.html";
+  } catch (err) {
+    zoneErreur.innerHTML = `<div class="message-erreur">${err.message}</div>`;
+  }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,82 @@
+// db.js — Connexion SQLite + création du schéma au démarrage.
+// SQLite est choisi ici pour simplifier le déploiement initial (0 config).
+// En production à forte charge, remplacez par PostgreSQL (voir README).
+
+const Database = require("better-sqlite3");
+const path = require("path");
+
+const db = new Database(path.join(__dirname, "immoconnect.db"));
+db.pragma("journal_mode = WAL");
+db.pragma("foreign_keys = ON");
+
+db.exec(`
+CREATE TABLE IF NOT EXISTS users (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  nom_complet   TEXT NOT NULL,
+  email         TEXT UNIQUE NOT NULL,
+  telephone     TEXT NOT NULL,
+  ville         TEXT,
+  mot_de_passe  TEXT NOT NULL,
+  role          TEXT NOT NULL DEFAULT 'proprietaire', -- proprietaire | admin
+  statut_compte TEXT NOT NULL DEFAULT 'en_attente_paiement', -- en_attente_paiement | actif | suspendu
+  cree_le       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS paiements (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  bien_id         INTEGER REFERENCES biens(id) ON DELETE SET NULL, -- rempli pour type=mise_en_avant
+  reference       TEXT UNIQUE NOT NULL,
+  montant         INTEGER NOT NULL,
+  type            TEXT NOT NULL DEFAULT 'inscription', -- inscription | mise_en_avant
+  statut          TEXT NOT NULL DEFAULT 'initie', -- initie | reussi | echoue
+  moyen_paiement  TEXT,
+  token_paytech   TEXT,
+  cree_le         TEXT NOT NULL DEFAULT (datetime('now')),
+  confirme_le     TEXT
+);
+
+CREATE TABLE IF NOT EXISTS biens (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  titre         TEXT NOT NULL,
+  type_bien     TEXT NOT NULL, -- terrain | appartement_vente | appartement_location | appartement_meuble | maison_vente | maison_location | villa_vente | villa_location
+  transaction_type TEXT NOT NULL, -- vente | location
+  ville         TEXT NOT NULL,
+  quartier      TEXT,
+  prix          INTEGER NOT NULL,
+  superficie    REAL,
+  chambres      INTEGER,
+  salles_bain   INTEGER,
+  description   TEXT,
+  images        TEXT DEFAULT '[]', -- JSON: liste de chemins d'images
+  statut        TEXT NOT NULL DEFAULT 'en_attente', -- en_attente | publie | refuse | archive
+  mise_en_avant          INTEGER NOT NULL DEFAULT 0,
+  mise_en_avant_jusqu_au TEXT,  -- datetime ISO ; NULL = pas d'expiration connue
+  vues                   INTEGER NOT NULL DEFAULT 0,
+  cree_le                TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_biens_statut ON biens(statut);
+CREATE INDEX IF NOT EXISTS idx_biens_type ON biens(type_bien);
+CREATE INDEX IF NOT EXISTS idx_biens_ville ON biens(ville);
+
+CREATE TABLE IF NOT EXISTS contacts (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  bien_id    INTEGER NOT NULL REFERENCES biens(id) ON DELETE CASCADE,
+  nom        TEXT NOT NULL,
+  email      TEXT NOT NULL,
+  telephone  TEXT,
+  message    TEXT NOT NULL,
+  lu         INTEGER NOT NULL DEFAULT 0,
+  cree_le    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_contacts_bien ON contacts(bien_id);
+`);
+
+// Migrations incrémentales pour les bases déjà existantes
+try { db.exec("ALTER TABLE paiements ADD COLUMN bien_id INTEGER REFERENCES biens(id) ON DELETE SET NULL"); } catch (_) {}
+try { db.exec("ALTER TABLE biens ADD COLUMN mise_en_avant_jusqu_au TEXT"); } catch (_) {}
+
+module.exports = db;

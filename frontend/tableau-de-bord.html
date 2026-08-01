@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tableau de bord — ImmoConnect</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="entete">
+  <div class="conteneur barre">
+    <a href="index.html" class="logo"><span class="pastille"></span>ImmoConnect</a>
+    <nav class="nav"><a href="annonces.html">Voir le site public</a></nav>
+    <button id="btn-deconnexion" class="bouton bouton-fantome">Se déconnecter</button>
+  </div>
+</header>
+
+<div class="tableau-layout">
+  <aside class="tableau-lateral">
+    <h4>Mon espace</h4>
+    <a class="lien-nav actif" href="#" id="nav-vue" onclick="afficherSection('vue');return false;">Vue d'ensemble</a>
+    <a class="lien-nav" href="#" id="nav-messages" onclick="afficherSection('messages');return false;">
+      Messages <span id="badge-non-lus" style="display:none;background:var(--or);color:var(--bleu-nuit);border-radius:10px;font-size:0.7rem;padding:1px 7px;font-weight:700;margin-left:6px;"></span>
+    </a>
+    <a class="lien-nav" href="#form-nouvelle-annonce">Publier une annonce</a>
+    <a class="lien-nav" href="annonces.html">Annonces publiques</a>
+  </aside>
+
+  <main class="tableau-contenu">
+    <div id="banniere-compte"></div>
+
+    <!-- Section messages (masquée par défaut) -->
+    <div id="section-messages" style="display:none;">
+      <h3>Mes messages reçus</h3>
+      <div id="liste-messages"><p style="color:var(--texte-clair);">Chargement...</p></div>
+    </div>
+
+    <!-- Section vue d'ensemble (visible par défaut) -->
+    <div id="section-vue">
+
+    <div class="grille-stats">
+      <div class="carte-stat"><div class="valeur" id="stat-total">—</div><div class="label">Annonces au total</div></div>
+      <div class="carte-stat"><div class="valeur" id="stat-publie">—</div><div class="label">Publiées</div></div>
+      <div class="carte-stat"><div class="valeur" id="stat-attente">—</div><div class="label">En attente</div></div>
+      <div class="carte-stat"><div class="valeur" id="stat-vues">—</div><div class="label">Vues cumulées</div></div>
+    </div>
+
+    <h3>Mes annonces</h3>
+    <div id="conteneur-tableau">
+      <table class="table-biens">
+        <thead>
+          <tr><th>Titre</th><th>Type</th><th>Ville</th><th>Prix</th><th>Statut</th><th>Vues</th><th>Mise en avant</th><th></th></tr>
+        </thead>
+        <tbody id="corps-table-biens">
+          <tr><td colspan="8" class="centre" style="color:var(--texte-clair);padding:24px;">Chargement...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="carte-formulaire large" id="form-nouvelle-annonce" style="margin-left:0;">
+      <h3 class="mt-0">Publier une nouvelle annonce</h3>
+      <p class="aide" style="margin-bottom:20px;">Elle sera visible publiquement après validation par notre équipe (sous 24h).</p>
+
+      <div id="zone-erreur-annonce"></div>
+      <div id="zone-succes-annonce"></div>
+
+      <form id="form-annonce">
+        <div class="grille-2">
+          <div class="champ">
+            <label>Titre de l'annonce</label>
+            <input type="text" name="titre" required placeholder="Ex : Belle villa 5 chambres avec piscine">
+          </div>
+          <div class="champ">
+            <label>Type de bien</label>
+            <select name="type_bien" id="select-type" required>
+              <option value="terrain" data-transaction="vente">Terrain</option>
+              <option value="appartement_vente" data-transaction="vente">Appartement à vendre</option>
+              <option value="appartement_location" data-transaction="location">Appartement à louer</option>
+              <option value="appartement_meuble" data-transaction="location">Appartement meublé</option>
+              <option value="maison_vente" data-transaction="vente">Maison à vendre</option>
+              <option value="maison_location" data-transaction="location">Maison à louer</option>
+              <option value="villa_vente" data-transaction="vente">Villa à vendre</option>
+              <option value="villa_location" data-transaction="location">Villa à louer</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grille-2">
+          <div class="champ">
+            <label>Ville</label>
+            <input type="text" name="ville" required placeholder="Dakar, Touba, Saly...">
+          </div>
+          <div class="champ">
+            <label>Quartier (optionnel)</label>
+            <input type="text" name="quartier" placeholder="Ex : Almadies">
+          </div>
+        </div>
+
+        <div class="grille-2">
+          <div class="champ">
+            <label>Prix (FCFA)</label>
+            <input type="number" name="prix" required min="0" placeholder="Ex : 25000000">
+          </div>
+          <div class="champ">
+            <label>Superficie (m²)</label>
+            <input type="number" name="superficie" min="0" placeholder="Ex : 300">
+          </div>
+        </div>
+
+        <div class="grille-2">
+          <div class="champ">
+            <label>Chambres</label>
+            <input type="number" name="chambres" min="0" placeholder="Ex : 4">
+          </div>
+          <div class="champ">
+            <label>Salles de bain</label>
+            <input type="number" name="salles_bain" min="0" placeholder="Ex : 2">
+          </div>
+        </div>
+
+        <div class="champ">
+          <label>Description</label>
+          <textarea name="description" rows="4" placeholder="Décrivez le bien : atouts, environnement, accès..."></textarea>
+        </div>
+
+        <div class="champ">
+          <label>Photos (jusqu'à 8, JPEG/PNG/WEBP)</label>
+          <input type="file" name="images" accept="image/jpeg,image/png,image/webp" multiple>
+        </div>
+
+        <input type="hidden" name="transaction_type" id="champ-transaction" value="vente">
+
+        <button type="submit" class="bouton bouton-primaire" id="btn-soumettre-annonce">Soumettre l'annonce</button>
+      </form>
+    </div>
+    </div><!-- fin section-vue -->
+  </main>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+if (!Session.estConnecte()) window.location.href = "connexion.html";
+
+document.getElementById("btn-deconnexion").addEventListener("click", () => {
+  Session.clear();
+  window.location.href = "index.html";
+});
+
+document.getElementById("select-type").addEventListener("change", (e) => {
+  const transaction = e.target.selectedOptions[0].dataset.transaction;
+  document.getElementById("champ-transaction").value = transaction;
+});
+
+async function chargerProfil() {
+  const banniere = document.getElementById("banniere-compte");
+  const paramPaiement = new URLSearchParams(window.location.search).get("paiement");
+  try {
+    const { user } = await appelApi("/auth/moi");
+    Session.setUser(user);
+
+    if (user.statut_compte !== "actif") {
+      banniere.innerHTML = `
+        <div class="message-erreur" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+          <span>Votre compte n'est pas encore actif. Réglez les 5000 FCFA d'inscription pour publier des annonces.</span>
+          <a href="inscription.html" class="bouton bouton-primaire" style="padding:8px 16px;">Régler maintenant</a>
+        </div>`;
+      document.getElementById("btn-soumettre-annonce").disabled = true;
+    } else if (paramPaiement === "mea_succes") {
+      banniere.innerHTML = `<div class="message-succes">★ Mise en avant activée ! Votre annonce apparaît maintenant en tête des résultats pendant 7 jours.</div>`;
+    } else if (paramPaiement === "succes") {
+      banniere.innerHTML = `<div class="message-succes">Compte activé avec succès ! Vous pouvez maintenant publier des annonces.</div>`;
+    } else {
+      banniere.innerHTML = `<div class="message-succes">Compte actif — Bienvenue ${user.nom_complet.split(" ")[0]}, vous pouvez publier vos annonces.</div>`;
+    }
+  } catch (err) {
+    Session.clear();
+    window.location.href = "connexion.html";
+  }
+}
+
+async function initierMiseEnAvant(bienId) {
+  if (!confirm("Mettre ce bien en avant pendant 7 jours pour 2 000 FCFA ?\nIl apparaîtra en tête des résultats avec un badge \"Coup de cœur\".")) return;
+  try {
+    const data = await appelApi(`/payments/initier-mise-en-avant/${bienId}`, { method: "POST" });
+    if (data.url_paiement) window.location.href = data.url_paiement;
+  } catch (err) {
+    alert("Erreur : " + err.message);
+  }
+}
+
+async function chargerMesAnnonces() {
+  const corps = document.getElementById("corps-table-biens");
+  try {
+    const biens = await appelApi("/biens/moi/liste");
+
+    document.getElementById("stat-total").textContent = biens.length;
+    document.getElementById("stat-publie").textContent = biens.filter(b => b.statut === "publie").length;
+    document.getElementById("stat-attente").textContent = biens.filter(b => b.statut === "en_attente").length;
+    document.getElementById("stat-vues").textContent = biens.reduce((s, b) => s + (b.vues || 0), 0);
+
+    if (biens.length === 0) {
+      corps.innerHTML = `<tr><td colspan="8" class="centre" style="color:var(--texte-clair);padding:24px;">Aucune annonce pour l'instant. Publiez-en une ci-dessous.</td></tr>`;
+      return;
+    }
+
+    const etiquettes = { publie: "etiquette-publie", en_attente: "etiquette-attente", refuse: "etiquette-refuse", archive: "etiquette-attente" };
+    const libellesStatut = { publie: "Publiée", en_attente: "En attente", refuse: "Refusée", archive: "Archivée" };
+
+    corps.innerHTML = biens.map(b => {
+      const enAvant = b.mise_en_avant === 1 && b.mise_en_avant_jusqu_au && new Date(b.mise_en_avant_jusqu_au) > new Date();
+      let cellMEA;
+      if (enAvant) {
+        const dateExp = new Date(b.mise_en_avant_jusqu_au).toLocaleDateString("fr-FR");
+        cellMEA = `<span class="etiquette etiquette-attente" style="font-size:0.72rem;white-space:nowrap;">★ jusqu'au ${dateExp}</span>`;
+      } else if (b.statut === "publie") {
+        cellMEA = `<button class="bouton bouton-or" style="padding:5px 10px;font-size:0.78rem;line-height:1.3;" onclick="initierMiseEnAvant(${b.id})">★ Mettre en avant<br><small style="font-weight:400;">2 000 FCFA / 7j</small></button>`;
+      } else {
+        cellMEA = `<span style="color:var(--texte-clair);font-size:0.8rem;">—</span>`;
+      }
+      return `
+        <tr>
+          <td>${b.titre}</td>
+          <td>${LIBELLES_TYPE[b.type_bien] || b.type_bien}</td>
+          <td>${b.ville}</td>
+          <td>${formaterPrix(b.prix)}</td>
+          <td><span class="etiquette ${etiquettes[b.statut]}">${libellesStatut[b.statut]}</span></td>
+          <td>${b.vues}</td>
+          <td>${cellMEA}</td>
+          <td><button class="bouton bouton-fantome" style="padding:6px 12px;font-size:0.8rem;color:var(--rouge-alerte);border-color:var(--rouge-alerte);" onclick="supprimerAnnonce(${b.id})">Supprimer</button></td>
+        </tr>`;
+    }).join("");
+  } catch (err) {
+    corps.innerHTML = `<tr><td colspan="8" class="centre" style="color:var(--rouge-alerte);padding:24px;">${err.message}</td></tr>`;
+  }
+}
+
+async function supprimerAnnonce(id) {
+  if (!confirm("Supprimer définitivement cette annonce ?")) return;
+  try {
+    await appelApi(`/biens/${id}`, { method: "DELETE" });
+    chargerMesAnnonces();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+document.getElementById("form-annonce").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const zoneErreur = document.getElementById("zone-erreur-annonce");
+  const zoneSucces = document.getElementById("zone-succes-annonce");
+  zoneErreur.innerHTML = ""; zoneSucces.innerHTML = "";
+
+  const bouton = document.getElementById("btn-soumettre-annonce");
+  bouton.disabled = true;
+  bouton.textContent = "Envoi en cours...";
+
+  try {
+    const donnees = new FormData(e.target);
+    await appelApi("/biens", { method: "POST", body: donnees });
+    zoneSucces.innerHTML = `<div class="message-succes">Annonce soumise avec succès. Elle sera visible après validation.</div>`;
+    e.target.reset();
+    chargerMesAnnonces();
+  } catch (err) {
+    zoneErreur.innerHTML = `<div class="message-erreur">${err.message}</div>`;
+  } finally {
+    bouton.disabled = false;
+    bouton.textContent = "Soumettre l'annonce";
+  }
+});
+
+// ── Navigation par section ─────────────────────────────
+function afficherSection(section) {
+  document.getElementById("section-vue").style.display = section === "vue" ? "" : "none";
+  document.getElementById("section-messages").style.display = section === "messages" ? "" : "none";
+  document.getElementById("nav-vue").classList.toggle("actif", section === "vue");
+  document.getElementById("nav-messages").classList.toggle("actif", section === "messages");
+  if (section === "messages") chargerMessages();
+}
+
+// ── Messagerie ────────────────────────────────────────
+async function chargerMessages() {
+  const conteneur = document.getElementById("liste-messages");
+  conteneur.innerHTML = "<p style='color:var(--texte-clair);'>Chargement...</p>";
+  try {
+    const messages = await appelApi("/contacts/moi");
+
+    // Badge non lus dans la nav
+    const nonLus = messages.filter(m => !m.lu).length;
+    const badge = document.getElementById("badge-non-lus");
+    if (nonLus > 0) { badge.textContent = nonLus; badge.style.display = "inline"; }
+    else { badge.style.display = "none"; }
+
+    if (messages.length === 0) {
+      conteneur.innerHTML = "<p style='color:var(--texte-clair);'>Aucun message reçu pour l'instant.</p>";
+      return;
+    }
+
+    conteneur.innerHTML = messages.map(m => `
+      <div id="msg-${m.id}" style="background:var(--blanc);border:1px solid ${m.lu ? 'var(--sable-fonce)' : 'var(--or)'};border-radius:6px;padding:18px 20px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
+          <div>
+            <strong>${escHtml(m.nom)}</strong>
+            ${!m.lu ? '<span style="background:var(--or);color:var(--bleu-nuit);font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:8px;">Nouveau</span>' : ''}
+            <span style="font-size:0.82rem;color:var(--texte-clair);margin-left:10px;">${escHtml(m.email)}${m.telephone ? ' · ' + escHtml(m.telephone) : ''}</span>
+          </div>
+          <span style="font-size:0.78rem;color:var(--texte-clair);">${new Date(m.cree_le).toLocaleString("fr-FR")}</span>
+        </div>
+        <p style="font-size:0.82rem;color:var(--texte-clair);margin:4px 0 10px;">
+          Re : <a href="annonce.html?id=${m.bien_id}" style="color:var(--terre);">${escHtml(m.bien_titre)}</a> — ${escHtml(m.bien_ville)}
+        </p>
+        <p style="margin:0 0 14px;line-height:1.6;">${escHtml(m.message).replace(/\n/g, "<br>")}</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <a href="mailto:${escHtml(m.email)}?subject=Re : ${encodeURIComponent(m.bien_titre)}" class="bouton bouton-primaire" style="padding:6px 14px;font-size:0.82rem;">Répondre par e-mail</a>
+          ${!m.lu ? `<button class="bouton bouton-secondaire" style="padding:6px 14px;font-size:0.82rem;" onclick="marquerLu(${m.id})">Marquer lu</button>` : ''}
+          <button class="bouton" style="padding:6px 14px;font-size:0.82rem;color:var(--rouge-alerte);border-color:var(--rouge-alerte);" onclick="supprimerMessage(${m.id})">Supprimer</button>
+        </div>
+      </div>`).join("");
+  } catch (err) {
+    conteneur.innerHTML = `<p style="color:var(--rouge-alerte);">${err.message}</p>`;
+  }
+}
+
+async function marquerLu(id) {
+  try {
+    await appelApi(`/contacts/${id}/lu`, { method: "PATCH" });
+    chargerMessages();
+  } catch (err) { alert(err.message); }
+}
+
+async function supprimerMessage(id) {
+  if (!confirm("Supprimer ce message ?")) return;
+  try {
+    await appelApi(`/contacts/${id}`, { method: "DELETE" });
+    const el = document.getElementById(`msg-${id}`);
+    if (el) el.remove();
+    chargerMessages();
+  } catch (err) { alert(err.message); }
+}
+
+function escHtml(str) {
+  return String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// Charger le badge non lus au démarrage (silencieusement)
+async function chargerBadgeNonLus() {
+  try {
+    const messages = await appelApi("/contacts/moi");
+    const nonLus = messages.filter(m => !m.lu).length;
+    const badge = document.getElementById("badge-non-lus");
+    if (nonLus > 0) { badge.textContent = nonLus; badge.style.display = "inline"; }
+  } catch (_) {}
+}
+
+chargerProfil();
+chargerMesAnnonces();
+chargerBadgeNonLus();
+</script>
+
+</body>
+</html>

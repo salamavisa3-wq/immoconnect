@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toutes les annonces — ImmoConnect</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="entete">
+  <div class="conteneur barre">
+    <a href="index.html" class="logo"><span class="pastille"></span>ImmoConnect</a>
+    <nav class="nav"><a href="index.html">Accueil</a></nav>
+    <a href="inscription.html" class="bouton bouton-primaire">Publier une annonce</a>
+  </div>
+</header>
+
+<section class="section" style="padding-bottom:0;">
+  <div class="conteneur">
+    <h2>Toutes les annonces</h2>
+    <form id="form-filtres" class="carte-formulaire large" style="margin:0 0 40px;padding:24px 26px;">
+      <div class="grille-2">
+        <div class="champ">
+          <label>Type de bien</label>
+          <select name="type">
+            <option value="">Tous les types</option>
+            <option value="terrain">Terrain</option>
+            <option value="appartement_vente">Appartement à vendre</option>
+            <option value="appartement_location">Appartement à louer</option>
+            <option value="appartement_meuble">Appartement meublé</option>
+            <option value="maison_vente">Maison à vendre</option>
+            <option value="maison_location">Maison à louer</option>
+            <option value="villa_vente">Villa à vendre</option>
+            <option value="villa_location">Villa à louer</option>
+          </select>
+        </div>
+        <div class="champ">
+          <label>Ville</label>
+          <input type="text" name="ville" placeholder="Ex : Dakar, Touba...">
+        </div>
+      </div>
+      <div class="grille-2">
+        <div class="champ">
+          <label>Prix minimum (FCFA)</label>
+          <input type="number" name="prix_min" min="0">
+        </div>
+        <div class="champ">
+          <label>Prix maximum (FCFA)</label>
+          <input type="number" name="prix_max" min="0">
+        </div>
+      </div>
+      <button type="submit" class="bouton bouton-primaire">Filtrer</button>
+    </form>
+  </div>
+</section>
+
+<section class="section" style="padding-top:0;">
+  <div class="conteneur">
+    <div id="grille-resultats" class="grille-annonces">
+      <p>Chargement des annonces...</p>
+    </div>
+  </div>
+</section>
+
+<footer class="pied">
+  <div class="conteneur">
+    <div>© 2026 ImmoConnect — Plateforme immobilière, Sénégal</div>
+    <div><a href="inscription.html">Publier une annonce</a></div>
+  </div>
+</footer>
+
+<script src="js/api.js"></script>
+<script>
+async function chargerAnnonces(params = {}) {
+  const grille = document.getElementById("grille-resultats");
+  grille.innerHTML = "<p>Chargement des annonces...</p>";
+
+  const query = new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v))).toString();
+
+  try {
+    const { resultats, total } = await appelApi(`/biens?${query}`);
+    if (resultats.length === 0) {
+      grille.innerHTML = `<p style="color:var(--texte-clair);">Aucune annonce ne correspond à votre recherche pour le moment.</p>`;
+      return;
+    }
+    grille.innerHTML = resultats.map(carteAnnonce).join("");
+  } catch (err) {
+    grille.innerHTML = `<p style="color:var(--rouge-alerte);">${err.message}</p>`;
+  }
+}
+
+function carteAnnonce(b) {
+  const enAvant = b.mise_en_avant === 1 &&
+    (!b.mise_en_avant_jusqu_au || new Date(b.mise_en_avant_jusqu_au) > new Date());
+  const image = b.images && b.images[0]
+    ? `<img src="${window.location.hostname === 'localhost' ? 'http://localhost:4000' : ''}${b.images[0]}" alt="${b.titre}">`
+    : `<span>Pas de photo</span>`;
+
+  return `
+    <a class="annonce-carte${enAvant ? ' annonce-en-avant' : ''}" href="annonce.html?id=${b.id}">
+      <div class="annonce-image">
+        <span class="badge-type">${LIBELLES_TYPE[b.type_bien] || b.type_bien}</span>
+        ${enAvant ? '<span class="badge-coup-de-coeur">★ Coup de cœur</span>' : ''}
+        ${image}
+      </div>
+      <div class="annonce-corps">
+        <h4>${b.titre}</h4>
+        <div class="annonce-lieu">${b.quartier ? b.quartier + ", " : ""}${b.ville}</div>
+        <div class="annonce-prix">${formaterPrix(b.prix)}</div>
+        <div class="annonce-carac">
+          ${b.superficie ? `<span>${b.superficie} m²</span>` : ""}
+          ${b.chambres ? `<span>${b.chambres} ch.</span>` : ""}
+          ${b.salles_bain ? `<span>${b.salles_bain} SDB</span>` : ""}
+        </div>
+      </div>
+    </a>`;
+}
+
+document.getElementById("form-filtres").addEventListener("submit", (e) => {
+  e.preventDefault();
+  chargerAnnonces(Object.fromEntries(new FormData(e.target)));
+});
+
+chargerAnnonces();
+</script>
+
+</body>
+</html>

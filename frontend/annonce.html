@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Détail de l'annonce — ImmoConnect</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="entete">
+  <div class="conteneur barre">
+    <a href="index.html" class="logo"><span class="pastille"></span>ImmoConnect</a>
+    <nav class="nav"><a href="annonces.html">← Retour aux annonces</a></nav>
+    <a href="inscription.html" class="bouton bouton-primaire">Publier une annonce</a>
+  </div>
+</header>
+
+<section class="section">
+  <div class="conteneur" id="contenu-annonce" style="max-width:760px;">
+    Chargement...
+  </div>
+</section>
+
+<script src="js/api.js"></script>
+<script>
+const idBien = new URLSearchParams(window.location.search).get("id");
+const baseUploads = window.location.hostname === "localhost" ? "http://localhost:4000" : "";
+
+async function chargerDetail() {
+  const conteneur = document.getElementById("contenu-annonce");
+  try {
+    const b = await appelApi(`/biens/${idBien}`);
+
+    conteneur.innerHTML = `
+      <div class="cachet-ref" style="margin-bottom:10px;">RÉF. TF-${String(b.id).padStart(6, "0")}</div>
+      ${b.mise_en_avant === 1 && (!b.mise_en_avant_jusqu_au || new Date(b.mise_en_avant_jusqu_au) > new Date())
+        ? '<span class="etiquette etiquette-attente" style="display:inline-block;margin-bottom:10px;">★ Coup de cœur</span>'
+        : ""}
+      <h1>${b.titre}</h1>
+      <p style="color:var(--texte-clair);margin-top:-6px;">${b.quartier ? b.quartier + ", " : ""}${b.ville}</p>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin:22px 0;">
+        ${(b.images.length ? b.images : [null]).map(img => img
+          ? `<img src="${baseUploads}${img}" style="width:220px;height:150px;object-fit:cover;border-radius:6px;border:1px solid var(--sable-fonce);">`
+          : `<div style="width:220px;height:150px;background:var(--bleu-nuit);border-radius:6px;display:flex;align-items:center;justify-content:center;color:rgba(243,236,219,0.5);font-size:0.8rem;">Pas de photo</div>`
+        ).join("")}
+      </div>
+
+      <div class="cachet-carte" style="max-width:340px;margin:0 0 28px;">
+        <div class="prix">${formaterPrix(b.prix)}</div>
+        <ul class="cachet-liste">
+          <li><span>Type</span><span>${LIBELLES_TYPE[b.type_bien] || b.type_bien}</span></li>
+          <li><span>Transaction</span><span>${b.transaction_type === "vente" ? "Vente" : "Location"}</span></li>
+          ${b.superficie ? `<li><span>Superficie</span><span>${b.superficie} m²</span></li>` : ""}
+          ${b.chambres ? `<li><span>Chambres</span><span>${b.chambres}</span></li>` : ""}
+          ${b.salles_bain ? `<li><span>Salles de bain</span><span>${b.salles_bain}</span></li>` : ""}
+          <li><span>Vues</span><span>${b.vues}</span></li>
+        </ul>
+      </div>
+
+      <h3>Description</h3>
+      <p style="color:var(--texte);line-height:1.7;">${b.description ? b.description.replace(/\n/g, "<br>") : "Aucune description fournie."}</p>
+
+      <div style="margin-top:32px;background:var(--blanc);border:1px solid var(--sable-fonce);border-radius:8px;padding:30px;">
+        <h3 style="margin-top:0;">Contacter le propriétaire</h3>
+        <div id="msg-contact-erreur"></div>
+        <div id="msg-contact-succes"></div>
+        <form id="form-contact" style="display:grid;gap:14px;">
+          <div class="grille-2" style="gap:14px;">
+            <div class="champ" style="margin:0;">
+              <label>Votre nom *</label>
+              <input type="text" name="nom" required placeholder="Prénom et nom">
+            </div>
+            <div class="champ" style="margin:0;">
+              <label>Votre e-mail *</label>
+              <input type="email" name="email" required placeholder="vous@exemple.com">
+            </div>
+          </div>
+          <div class="champ" style="margin:0;">
+            <label>Téléphone (optionnel)</label>
+            <input type="text" name="telephone" placeholder="+221 77 000 00 00">
+          </div>
+          <div class="champ" style="margin:0;">
+            <label>Votre message *</label>
+            <textarea name="message" rows="4" required placeholder="Bonjour, je suis intéressé(e) par ce bien..."></textarea>
+          </div>
+          <button type="submit" class="bouton bouton-primaire" id="btn-envoyer-message">Envoyer le message</button>
+        </form>
+      </div>
+    `;
+  } catch (err) {
+    conteneur.innerHTML = `<p style="color:var(--rouge-alerte);">${err.message}</p>`;
+  }
+}
+
+chargerDetail();
+
+document.addEventListener("submit", async (e) => {
+  if (e.target.id !== "form-contact") return;
+  e.preventDefault();
+  const errDiv = document.getElementById("msg-contact-erreur");
+  const sucDiv = document.getElementById("msg-contact-succes");
+  errDiv.innerHTML = ""; sucDiv.innerHTML = "";
+
+  const btn = document.getElementById("btn-envoyer-message");
+  btn.disabled = true; btn.textContent = "Envoi...";
+
+  const payload = Object.fromEntries(new FormData(e.target));
+  try {
+    const data = await appelApi(`/contacts/${idBien}`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    sucDiv.innerHTML = `<div class="message-succes">${data.message}</div>`;
+    e.target.reset();
+  } catch (err) {
+    errDiv.innerHTML = `<div class="message-erreur">${err.message}</div>`;
+  } finally {
+    btn.disabled = false; btn.textContent = "Envoyer le message";
+  }
+});
+</script>
+
+</body>
+</html>
