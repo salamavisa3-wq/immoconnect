@@ -1,7 +1,7 @@
 // api.js — Petit client HTTP commun à toutes les pages.
 
 const API_BASE = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-  ? "http://localhost:4000/api"
+  ? "http://localhost:3001/api"
   : "/api"; // en production, servez le frontend derrière le même domaine que l'API (proxy)
 
 const Session = {

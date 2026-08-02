@@ -14,7 +14,7 @@ const contactsRoutes = require("./routes/contacts.routes");
 const app = express();
 
 app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Limite de débit globale contre les abus (l'IPN PayTech a son propre parseur au-dessus)
