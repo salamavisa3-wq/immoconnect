@@ -1,15 +1,39 @@
-// db.js — Connexion SQLite + création du schéma au démarrage.
-// SQLite est choisi ici pour simplifier le déploiement initial (0 config).
-// En production à forte charge, remplacez par PostgreSQL (voir README).
+// db.js — Connexion libSQL (compatible SQLite) + création du schéma au démarrage.
+// En local / dev : fichier local sakeurimmo.db (aucune configuration requise).
+// En production : pointez TURSO_DATABASE_URL / TURSO_AUTH_TOKEN vers une base
+// Turso pour une persistance réelle sur les hébergeurs Node à disque éphémère
+// (Render, Railway, Fly.io...). Voir README pour la procédure.
 
-const Database = require("better-sqlite3");
+const { createClient } = require("@libsql/client");
 const path = require("path");
 
-const db = new Database(path.join(__dirname, "immoconnect.db"));
-db.pragma("journal_mode = WAL");
-db.pragma("foreign_keys = ON");
+const client = createClient(
+  process.env.TURSO_DATABASE_URL
+    ? { url: process.env.TURSO_DATABASE_URL, authToken: process.env.TURSO_AUTH_TOKEN }
+    : { url: `file:${path.join(__dirname, "sakeurimmo.db")}` }
+);
 
-db.exec(`
+async function exec(sql) {
+  await client.executeMultiple(sql);
+}
+
+async function run(sql, params = []) {
+  const res = await client.execute({ sql, args: params });
+  return { lastInsertRowid: Number(res.lastInsertRowid), changes: res.rowsAffected };
+}
+
+async function get(sql, params = []) {
+  const res = await client.execute({ sql, args: params });
+  return res.rows[0];
+}
+
+async function all(sql, params = []) {
+  const res = await client.execute({ sql, args: params });
+  return res.rows;
+}
+
+async function initialiser() {
+  await exec(`
 CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   nom_complet   TEXT NOT NULL,
@@ -49,7 +73,7 @@ CREATE TABLE IF NOT EXISTS biens (
   chambres      INTEGER,
   salles_bain   INTEGER,
   description   TEXT,
-  images        TEXT DEFAULT '[]', -- JSON: liste de chemins d'images
+  images        TEXT DEFAULT '[]', -- JSON: liste d'URLs d'images (Cloudinary en prod)
   statut        TEXT NOT NULL DEFAULT 'en_attente', -- en_attente | publie | refuse | archive
   mise_en_avant          INTEGER NOT NULL DEFAULT 0,
   mise_en_avant_jusqu_au TEXT,  -- datetime ISO ; NULL = pas d'expiration connue
@@ -75,8 +99,11 @@ CREATE TABLE IF NOT EXISTS contacts (
 CREATE INDEX IF NOT EXISTS idx_contacts_bien ON contacts(bien_id);
 `);
 
-// Migrations incrémentales pour les bases déjà existantes
-try { db.exec("ALTER TABLE paiements ADD COLUMN bien_id INTEGER REFERENCES biens(id) ON DELETE SET NULL"); } catch (_) {}
-try { db.exec("ALTER TABLE biens ADD COLUMN mise_en_avant_jusqu_au TEXT"); } catch (_) {}
+  // Migrations incrémentales pour les bases déjà existantes
+  try { await exec("ALTER TABLE paiements ADD COLUMN bien_id INTEGER REFERENCES biens(id) ON DELETE SET NULL;"); } catch (_) {}
+  try { await exec("ALTER TABLE biens ADD COLUMN mise_en_avant_jusqu_au TEXT;"); } catch (_) {}
+}
 
-module.exports = db;
+const pretASync = initialiser();
+
+module.exports = { get, all, run, exec, pretASync };

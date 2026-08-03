@@ -1,4 +1,4 @@
-// server.js — Point d'entrée de l'API ImmoConnect
+// server.js — Point d'entrée de l'API SakeurImmo
 
 require("dotenv").config();
 const express = require("express");
@@ -6,6 +6,7 @@ const cors = require("cors");
 const path = require("path");
 const rateLimit = require("express-rate-limit");
 
+const db = require("./db");
 const authRoutes = require("./routes/auth.routes");
 const paymentsRoutes = require("./routes/payments.routes");
 const biensRoutes = require("./routes/biens.routes");
@@ -16,6 +17,7 @@ const app = express();
 app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
 app.use(express.json({ limit: "10mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use(express.static(path.join(__dirname, "..", "frontend")));
 
 // Limite de débit globale contre les abus (l'IPN PayTech a son propre parseur au-dessus)
 const limiteur = rateLimit({ windowMs: 15 * 60 * 1000, max: 300 });
@@ -36,6 +38,13 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`✅ ImmoConnect API démarrée sur http://localhost:${PORT}`);
-});
+db.pretASync
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`✅ SakeurImmo API démarrée sur http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Échec d'initialisation de la base de données :", err);
+    process.exit(1);
+  });

@@ -3,7 +3,7 @@
 const jwt = require("jsonwebtoken");
 const db = require("../db");
 
-function authRequis(req, res, next) {
+async function authRequis(req, res, next) {
   const header = req.headers.authorization || "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : null;
 
@@ -13,7 +13,7 @@ function authRequis(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(payload.id);
+    const user = await db.get("SELECT * FROM users WHERE id = ?", [payload.id]);
     if (!user) return res.status(401).json({ erreur: "Utilisateur introuvable." });
     req.user = user;
     next();

@@ -23,7 +23,7 @@ function assainirUser(user) {
 // POST /api/auth/register
 // Crée le compte propriétaire avec statut "en_attente_paiement".
 // Il devra régler les 5000 FCFA (voir /api/payments) avant de pouvoir publier.
-router.post("/register", (req, res) => {
+router.post("/register", async (req, res) => {
   const { nom_complet, email, telephone, ville, mot_de_passe } = req.body;
 
   if (!nom_complet || !email || !telephone || !mot_de_passe) {
@@ -33,21 +33,20 @@ router.post("/register", (req, res) => {
     return res.status(400).json({ erreur: "Le mot de passe doit contenir au moins 6 caractères." });
   }
 
-  const existant = db.prepare("SELECT id FROM users WHERE email = ?").get(email.toLowerCase().trim());
+  const existant = await db.get("SELECT id FROM users WHERE email = ?", [email.toLowerCase().trim()]);
   if (existant) {
     return res.status(409).json({ erreur: "Un compte existe déjà avec cet email." });
   }
 
   const hash = bcrypt.hashSync(mot_de_passe, 10);
 
-  const info = db
-    .prepare(
-      `INSERT INTO users (nom_complet, email, telephone, ville, mot_de_passe, statut_compte)
-       VALUES (?, ?, ?, ?, ?, 'en_attente_paiement')`
-    )
-    .run(nom_complet.trim(), email.toLowerCase().trim(), telephone.trim(), ville || null, hash);
+  const info = await db.run(
+    `INSERT INTO users (nom_complet, email, telephone, ville, mot_de_passe, statut_compte)
+     VALUES (?, ?, ?, ?, ?, 'en_attente_paiement')`,
+    [nom_complet.trim(), email.toLowerCase().trim(), telephone.trim(), ville || null, hash]
+  );
 
-  const user = db.prepare("SELECT * FROM users WHERE id = ?").get(info.lastInsertRowid);
+  const user = await db.get("SELECT * FROM users WHERE id = ?", [info.lastInsertRowid]);
   const token = genererToken(user);
 
   res.status(201).json({
@@ -59,13 +58,13 @@ router.post("/register", (req, res) => {
 });
 
 // POST /api/auth/login
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
   const { email, mot_de_passe } = req.body;
   if (!email || !mot_de_passe) {
     return res.status(400).json({ erreur: "Email et mot de passe requis." });
   }
 
-  const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email.toLowerCase().trim());
+  const user = await db.get("SELECT * FROM users WHERE email = ?", [email.toLowerCase().trim()]);
   if (!user || !bcrypt.compareSync(mot_de_passe, user.mot_de_passe)) {
     return res.status(401).json({ erreur: "Identifiants incorrects." });
   }

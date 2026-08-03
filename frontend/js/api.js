@@ -5,15 +5,15 @@ const API_BASE = window.location.hostname === "localhost" || window.location.hos
   : "/api"; // en production, servez le frontend derrière le même domaine que l'API (proxy)
 
 const Session = {
-  getToken: () => localStorage.getItem("immoconnect_token"),
-  setToken: (t) => localStorage.setItem("immoconnect_token", t),
-  getUser: () => JSON.parse(localStorage.getItem("immoconnect_user") || "null"),
-  setUser: (u) => localStorage.setItem("immoconnect_user", JSON.stringify(u)),
+  getToken: () => localStorage.getItem("sakeurimmo_token"),
+  setToken: (t) => localStorage.setItem("sakeurimmo_token", t),
+  getUser: () => JSON.parse(localStorage.getItem("sakeurimmo_user") || "null"),
+  setUser: (u) => localStorage.setItem("sakeurimmo_user", JSON.stringify(u)),
   clear: () => {
-    localStorage.removeItem("immoconnect_token");
-    localStorage.removeItem("immoconnect_user");
+    localStorage.removeItem("sakeurimmo_token");
+    localStorage.removeItem("sakeurimmo_user");
   },
-  estConnecte: () => !!localStorage.getItem("immoconnect_token"),
+  estConnecte: () => !!localStorage.getItem("sakeurimmo_token"),
 };
 
 async function appelApi(chemin, options = {}) {

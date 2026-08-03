@@ -1,15 +1,15 @@
-# ImmoConnect — Plateforme SaaS immobilière (Sénégal)
+# SakeurImmo — Plateforme SaaS immobilière (Sénégal)
 
 Plateforme permettant aux propriétaires de publier directement leurs biens
 (terrains, appartements à vendre/louer, appartements meublés, maisons,
 villas à vendre/louer...) moyennant des **frais d'inscription uniques de
-5000 FCFA**, payables par Orange Money, Wave ou carte bancaire via **PayTech**.
+5000 FCFA**, payables par Orange Money ou Wave via **PayTech**.
 
 ## Architecture
 
 ```
-immoconnect/
-├── backend/              API REST Node.js / Express + SQLite
+sakeurimmo/
+├── backend/              API REST Node.js / Express + libSQL (SQLite en local, Turso en prod)
 │   ├── server.js         Point d'entrée
 │   ├── db.js             Schéma de base de données
 │   ├── seed-admin.js     Création d'un compte administrateur
@@ -50,7 +50,7 @@ L'API démarre sur `http://localhost:3001`.
 ### 2. Créer un compte administrateur (modération des annonces)
 
 ```bash
-node seed-admin.js admin@immoconnect.sn VotreMotDePasse123
+node seed-admin.js admin@sakeurimmo.sn VotreMotDePasse123
 ```
 
 Connectez-vous ensuite sur `connexion.html` avec cet email, puis ouvrez
@@ -69,6 +69,25 @@ npx serve -l 5500
 Mettez à jour `FRONTEND_URL` dans `backend/.env` pour qu'il corresponde à
 l'adresse utilisée (ex : `http://localhost:5500`).
 
+## Déploiement en production (disque éphémère : Render, Railway, Fly.io...)
+
+La plupart des hébergeurs Node.js gratuits/pas chers ont un **disque éphémère**
+(remis à zéro à chaque redéploiement). Ce projet est donc conçu pour tourner
+sans écriture disque persistante en production :
+
+1. **Base de données** — créez une base sur [turso.tech](https://turso.tech)
+   (gratuit) et renseignez `TURSO_DATABASE_URL` / `TURSO_AUTH_TOKEN` dans
+   les variables d'environnement de votre service. Sans ces variables,
+   `db.js` utilise automatiquement un fichier SQLite local (pratique en dev).
+2. **Images des annonces** — créez un compte sur
+   [cloudinary.com](https://cloudinary.com) (gratuit) et renseignez
+   `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET`.
+   Sans ces variables, `biens.routes.js` bascule sur le disque local
+   `./uploads` (dev uniquement — perdu à chaque redéploiement en prod).
+3. **Frontend** — servi directement par le backend Express
+   (`express.static` sur `../frontend`), donc un seul service à déployer :
+   pas de configuration CORS/sous-domaine séparée nécessaire.
+
 ## Paiement réel avec PayTech (production)
 
 1. Créez un compte marchand sur [paytech.sn](https://paytech.sn).
@@ -76,9 +95,10 @@ l'adresse utilisée (ex : `http://localhost:5500`).
 3. Renseignez-les dans `backend/.env`, avec `PAYTECH_ENV=prod`.
 4. Déclarez l'URL d'IPN dans votre tableau de bord PayTech :
    `https://votre-domaine.com/api/payments/ipn`
-5. Le paiement redirige l'utilisateur vers Orange Money, Wave, Free Money
-   ou carte bancaire selon son choix ; l'IPN active automatiquement le
-   compte propriétaire dès confirmation du paiement.
+5. Le paiement redirige l'utilisateur vers Orange Money ou Wave selon son
+   choix (seules ces deux méthodes sont proposées, via `target_payment`) ;
+   l'IPN active automatiquement le compte propriétaire dès confirmation
+   du paiement.
 
 ## Flux fonctionnel
 
@@ -109,10 +129,8 @@ l'adresse utilisée (ex : `http://localhost:5500`).
   coordonnées directement).
 - Mise en avant payante d'annonces (`type = 'mise_en_avant'`, déjà prévu
   dans le schéma `paiements`).
-- Migration SQLite → PostgreSQL pour la montée en charge (le code SQL est
-  volontairement simple à adapter).
-- Stockage des images sur un service objet (S3, Cloudinary) plutôt qu'en
-  disque local pour un déploiement multi-instances.
+- Migration Turso → PostgreSQL pour la très forte montée en charge (le code
+  SQL est volontairement simple à adapter).
 - Tableau de bord analytique (vues, taux de conversion par type de bien).
 
 ## Sécurité

@@ -1,5 +1,5 @@
 // seed-admin.js — Crée (ou réinitialise) un compte administrateur pour la modération.
-// Usage : node seed-admin.js admin@immoconnect.sn MonMotDePasse123
+// Usage : node seed-admin.js admin@sakeurimmo.sn MonMotDePasse123
 
 require("dotenv").config();
 const bcrypt = require("bcryptjs");
@@ -12,16 +12,23 @@ if (!email || !motDePasse) {
   process.exit(1);
 }
 
-const hash = bcrypt.hashSync(motDePasse, 10);
-const existant = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
+async function main() {
+  await db.pretASync;
 
-if (existant) {
-  db.prepare("UPDATE users SET mot_de_passe = ?, role = 'admin', statut_compte = 'actif' WHERE email = ?").run(hash, email);
-  console.log(`Compte administrateur mis à jour : ${email}`);
-} else {
-  db.prepare(
-    `INSERT INTO users (nom_complet, email, telephone, mot_de_passe, role, statut_compte)
-     VALUES ('Administrateur', ?, '000000000', ?, 'admin', 'actif')`
-  ).run(email, hash);
-  console.log(`Compte administrateur créé : ${email}`);
+  const hash = bcrypt.hashSync(motDePasse, 10);
+  const existant = await db.get("SELECT id FROM users WHERE email = ?", [email]);
+
+  if (existant) {
+    await db.run("UPDATE users SET mot_de_passe = ?, role = 'admin', statut_compte = 'actif' WHERE email = ?", [hash, email]);
+    console.log(`Compte administrateur mis à jour : ${email}`);
+  } else {
+    await db.run(
+      `INSERT INTO users (nom_complet, email, telephone, mot_de_passe, role, statut_compte)
+       VALUES ('Administrateur', ?, '000000000', ?, 'admin', 'actif')`,
+      [email, hash]
+    );
+    console.log(`Compte administrateur créé : ${email}`);
+  }
 }
+
+main();

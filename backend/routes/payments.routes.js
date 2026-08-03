@@ -1,11 +1,11 @@
 // routes/payments.routes.js — Paiement des frais d'inscription (5000 FCFA)
-// via PayTech (agrégateur sénégalais : Orange Money, Wave, Free Money, cartes bancaires).
-// Doc officielle : https://paytech.sn/documentation
+// via PayTech (agrégateur sénégalais), restreint à Orange Money et Wave
+// via le paramètre target_payment. Doc officielle : https://paytech.sn/documentation
 //
 // Flux :
 //  1. Le propriétaire (déjà inscrit, statut "en_attente_paiement") appelle POST /api/payments/initier
 //  2. On crée un enregistrement "paiements" et on demande une URL de paiement à PayTech
-//  3. Le client est redirigé vers cette URL (Orange Money / Wave / carte...)
+//  3. Le client est redirigé vers cette URL (Orange Money ou Wave uniquement)
 //  4. PayTech notifie notre IPN (POST /api/payments/ipn) → on active le compte
 //  5. Le frontend peut aussi poller GET /api/payments/statut/:reference en attendant l'IPN
 
@@ -28,17 +28,19 @@ router.post("/initier", authRequis, async (req, res) => {
   }
 
   // Réutiliser un paiement déjà initié pour éviter les doublons
-  const existant = db
-    .prepare("SELECT * FROM paiements WHERE user_id = ? AND type = 'inscription' AND statut = 'initie' ORDER BY id DESC LIMIT 1")
-    .get(req.user.id);
+  const existant = await db.get(
+    "SELECT * FROM paiements WHERE user_id = ? AND type = 'inscription' AND statut = 'initie' ORDER BY id DESC LIMIT 1",
+    [req.user.id]
+  );
 
   const reference = existant ? existant.reference : `INS-${req.user.id}-${uuidv4().slice(0, 8)}`;
 
   if (!existant) {
-    db.prepare(
+    await db.run(
       `INSERT INTO paiements (user_id, reference, montant, type, statut)
-       VALUES (?, ?, ?, 'inscription', 'initie')`
-    ).run(req.user.id, reference, MONTANT_INSCRIPTION);
+       VALUES (?, ?, ?, 'inscription', 'initie')`,
+      [req.user.id, reference, MONTANT_INSCRIPTION]
+    );
   }
 
   // --- Mode démo : sans clés PayTech configurées, on renvoie une URL locale
@@ -63,11 +65,12 @@ router.post("/initier", authRequis, async (req, res) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        item_name: "Inscription propriétaire - ImmoConnect",
+        item_name: "Inscription propriétaire - SakeurImmo",
         item_price: MONTANT_INSCRIPTION,
         currency: "XOF",
         ref_command: reference,
-        command_name: `Frais d'inscription ImmoConnect (${req.user.email})`,
+        command_name: `Frais d'inscription SakeurImmo (${req.user.email})`,
+        target_payment: "Orange Money, Wave",
         env: process.env.PAYTECH_ENV || "test",
         ipn_url: `${process.env.APP_URL}/api/payments/ipn`,
         success_url: `${process.env.FRONTEND_URL}/tableau-de-bord.html?paiement=succes`,
@@ -82,7 +85,7 @@ router.post("/initier", authRequis, async (req, res) => {
       return res.status(502).json({ erreur: "Échec de l'initialisation du paiement PayTech.", detail: data });
     }
 
-    db.prepare("UPDATE paiements SET token_paytech = ? WHERE reference = ?").run(data.token, reference);
+    await db.run("UPDATE paiements SET token_paytech = ? WHERE reference = ?", [data.token, reference]);
 
     res.json({ mode: "paytech", reference, montant: MONTANT_INSCRIPTION, url_paiement: data.redirect_url, token: data.token });
   } catch (e) {
@@ -93,7 +96,7 @@ router.post("/initier", authRequis, async (req, res) => {
 
 // POST /api/payments/ipn — notification serveur-à-serveur envoyée par PayTech
 // (à déclarer dans le tableau de bord PayTech comme URL d'IPN)
-router.post("/ipn", express.urlencoded({ extended: true }), (req, res) => {
+router.post("/ipn", express.urlencoded({ extended: true }), async (req, res) => {
   try {
     const {
       type_event,
@@ -112,7 +115,7 @@ router.post("/ipn", express.urlencoded({ extended: true }), (req, res) => {
     }
 
     if (type_event === "sale_complete") {
-      confirmerPaiement(ref_command, payment_method);
+      await confirmerPaiement(ref_command, payment_method);
     }
 
     res.status(200).send("OK");
@@ -140,25 +143,27 @@ router.get("/demo-page/:reference", (req, res) => {
   `);
 });
 
-router.post("/demo-confirmer/:reference", (req, res) => {
-  confirmerPaiement(req.params.reference, "demo");
+router.post("/demo-confirmer/:reference", async (req, res) => {
+  await confirmerPaiement(req.params.reference, "demo");
   res.redirect(`${process.env.FRONTEND_URL}/tableau-de-bord.html?paiement=succes`);
 });
 
-function confirmerPaiement(reference, moyenPaiement) {
-  const paiement = db.prepare("SELECT * FROM paiements WHERE reference = ?").get(reference);
+async function confirmerPaiement(reference, moyenPaiement) {
+  const paiement = await db.get("SELECT * FROM paiements WHERE reference = ?", [reference]);
   if (!paiement || paiement.statut === "reussi") return;
 
-  db.prepare(
-    "UPDATE paiements SET statut = 'reussi', moyen_paiement = ?, confirme_le = datetime('now') WHERE reference = ?"
-  ).run(moyenPaiement, reference);
+  await db.run(
+    "UPDATE paiements SET statut = 'reussi', moyen_paiement = ?, confirme_le = datetime('now') WHERE reference = ?",
+    [moyenPaiement, reference]
+  );
 
   if (paiement.type === "inscription") {
-    db.prepare("UPDATE users SET statut_compte = 'actif' WHERE id = ?").run(paiement.user_id);
+    await db.run("UPDATE users SET statut_compte = 'actif' WHERE id = ?", [paiement.user_id]);
   } else if (paiement.type === "mise_en_avant" && paiement.bien_id) {
-    db.prepare(
-      "UPDATE biens SET mise_en_avant = 1, mise_en_avant_jusqu_au = datetime('now', '+7 days') WHERE id = ?"
-    ).run(paiement.bien_id);
+    await db.run(
+      "UPDATE biens SET mise_en_avant = 1, mise_en_avant_jusqu_au = datetime('now', '+7 days') WHERE id = ?",
+      [paiement.bien_id]
+    );
   }
 }
 
@@ -166,7 +171,7 @@ function confirmerPaiement(reference, moyenPaiement) {
 router.post("/initier-mise-en-avant/:bien_id", authRequis, async (req, res) => {
   const bienId = Number(req.params.bien_id);
 
-  const bien = db.prepare("SELECT * FROM biens WHERE id = ? AND user_id = ?").get(bienId, req.user.id);
+  const bien = await db.get("SELECT * FROM biens WHERE id = ? AND user_id = ?", [bienId, req.user.id]);
   if (!bien) return res.status(404).json({ erreur: "Annonce introuvable." });
   if (bien.statut !== "publie") {
     return res.status(400).json({ erreur: "Seules les annonces publiées peuvent être mises en avant." });
@@ -182,10 +187,11 @@ router.post("/initier-mise-en-avant/:bien_id", authRequis, async (req, res) => {
   }
 
   const reference = `MEA-${bienId}-${uuidv4().slice(0, 8)}`;
-  db.prepare(
+  await db.run(
     `INSERT INTO paiements (user_id, bien_id, reference, montant, type, statut)
-     VALUES (?, ?, ?, ?, 'mise_en_avant', 'initie')`
-  ).run(req.user.id, bienId, reference, MONTANT_MISE_EN_AVANT);
+     VALUES (?, ?, ?, ?, 'mise_en_avant', 'initie')`,
+    [req.user.id, bienId, reference, MONTANT_MISE_EN_AVANT]
+  );
 
   if (!process.env.PAYTECH_API_KEY || process.env.PAYTECH_API_KEY === "votre_api_key_paytech") {
     return res.json({
@@ -209,7 +215,8 @@ router.post("/initier-mise-en-avant/:bien_id", authRequis, async (req, res) => {
         item_price: MONTANT_MISE_EN_AVANT,
         currency: "XOF",
         ref_command: reference,
-        command_name: `Mise en avant ImmoConnect (annonce #${bienId})`,
+        command_name: `Mise en avant SakeurImmo (annonce #${bienId})`,
+        target_payment: "Orange Money, Wave",
         env: process.env.PAYTECH_ENV || "test",
         ipn_url: `${process.env.APP_URL}/api/payments/ipn`,
         success_url: `${process.env.FRONTEND_URL}/tableau-de-bord.html?paiement=mea_succes`,
@@ -221,7 +228,7 @@ router.post("/initier-mise-en-avant/:bien_id", authRequis, async (req, res) => {
     if (data.success !== 1) {
       return res.status(502).json({ erreur: "Échec de l'initialisation PayTech.", detail: data });
     }
-    db.prepare("UPDATE paiements SET token_paytech = ? WHERE reference = ?").run(data.token, reference);
+    await db.run("UPDATE paiements SET token_paytech = ? WHERE reference = ?", [data.token, reference]);
     res.json({ mode: "paytech", reference, montant: MONTANT_MISE_EN_AVANT, url_paiement: data.redirect_url });
   } catch (e) {
     console.error(e);
@@ -230,8 +237,11 @@ router.post("/initier-mise-en-avant/:bien_id", authRequis, async (req, res) => {
 });
 
 // Page démo mise en avant (sans clés PayTech)
-router.get("/demo-mise-en-avant/:reference", (req, res) => {
-  const paiement = db.prepare("SELECT p.*, b.titre FROM paiements p LEFT JOIN biens b ON b.id = p.bien_id WHERE p.reference = ?").get(req.params.reference);
+router.get("/demo-mise-en-avant/:reference", async (req, res) => {
+  const paiement = await db.get(
+    "SELECT p.*, b.titre FROM paiements p LEFT JOIN biens b ON b.id = p.bien_id WHERE p.reference = ?",
+    [req.params.reference]
+  );
   if (!paiement) return res.status(404).send("Paiement introuvable.");
   res.send(`
     <html lang="fr"><head><meta charset="utf-8"><title>Paiement simulé — Mise en avant</title>
@@ -249,16 +259,17 @@ router.get("/demo-mise-en-avant/:reference", (req, res) => {
   `);
 });
 
-router.post("/demo-confirmer-mea/:reference", (req, res) => {
-  confirmerPaiement(req.params.reference, "demo");
+router.post("/demo-confirmer-mea/:reference", async (req, res) => {
+  await confirmerPaiement(req.params.reference, "demo");
   res.redirect(`${process.env.FRONTEND_URL || "http://localhost:5500"}/tableau-de-bord.html?paiement=mea_succes`);
 });
 
 // GET /api/payments/statut/:reference — le frontend interroge ce endpoint (polling)
-router.get("/statut/:reference", authRequis, (req, res) => {
-  const paiement = db
-    .prepare("SELECT * FROM paiements WHERE reference = ? AND user_id = ?")
-    .get(req.params.reference, req.user.id);
+router.get("/statut/:reference", authRequis, async (req, res) => {
+  const paiement = await db.get(
+    "SELECT * FROM paiements WHERE reference = ? AND user_id = ?",
+    [req.params.reference, req.user.id]
+  );
   if (!paiement) return res.status(404).json({ erreur: "Paiement introuvable." });
   res.json({ statut: paiement.statut, reference: paiement.reference });
 });
