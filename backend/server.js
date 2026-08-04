@@ -36,6 +36,37 @@ app.use("/api/", limiteur);
 
 app.get("/api/sante", (req, res) => res.json({ statut: "ok", heure: new Date().toISOString() }));
 
+// Sitemap XML dynamique : pages statiques + annonces publiées (SEO)
+app.get("/sitemap.xml", async (req, res) => {
+  try {
+    const biens = await db.all("SELECT id, cree_le FROM biens WHERE statut = 'publie' ORDER BY cree_le DESC");
+    const aujourdHui = new Date().toISOString().slice(0, 10);
+    const pages = [
+      { loc: "https://sakeurimmo.com/", lastmod: aujourdHui, prio: "1.0" },
+      { loc: "https://sakeurimmo.com/annonces.html", lastmod: aujourdHui, prio: "0.9" },
+      { loc: "https://sakeurimmo.com/inscription.html", lastmod: aujourdHui, prio: "0.5" },
+    ];
+    const annonces = biens.map((b) => ({
+      loc: `https://sakeurimmo.com/annonce.html?id=${b.id}`,
+      lastmod: String(b.cree_le || "").slice(0, 10),
+      prio: "0.8",
+    }));
+    const urls = [...pages, ...annonces]
+      .map(
+        (u) =>
+          `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <priority>${u.prio}</priority>\n  </url>`
+      )
+      .join("\n");
+    res.set("Content-Type", "application/xml; charset=utf-8");
+    res.send(
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`
+    );
+  } catch (e) {
+    console.error("Erreur sitemap :", e);
+    res.status(500).json({ erreur: "Erreur sitemap." });
+  }
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/biens", biensRoutes);

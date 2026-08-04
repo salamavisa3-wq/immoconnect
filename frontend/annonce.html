@@ -4,6 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Détail de l'annonce — SakeurImmo</title>
+<meta name="description" content="Consultez les détails de cette annonce immobilière au Sénégal sur SakeurImmo.">
+<link rel="canonical" id="canonical-bien" href="https://sakeurimmo.com/annonce.html">
+
+<meta property="og:type" content="website">
+<meta property="og:url" id="og-url-bien" content="https://sakeurimmo.com/annonce.html">
+<meta property="og:site_name" content="SakeurImmo">
+<meta property="og:title" content="Annonce immobilière — SakeurImmo">
+<meta property="og:description" content="Consultez les détails de cette annonce immobilière au Sénégal sur SakeurImmo.">
+<meta property="og:image" content="https://sakeurimmo.com/images/og-image.jpg">
+<meta property="og:locale" content="fr_SN">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://sakeurimmo.com/images/og-image.jpg">
+
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -31,6 +46,27 @@ async function chargerDetail() {
   const conteneur = document.getElementById("contenu-annonce");
   try {
     const b = await appelApi(`/biens/${idBien}`);
+
+    // Mise à jour dynamique des balises SEO pour cette fiche
+    const prixTxt = formaterPrix(b.prix);
+    const typeTxt = LIBELLES_TYPE[b.type_bien] || b.type_bien;
+    const transactionTxt = b.transaction_type === "vente" ? "à vendre" : "à louer";
+    const villeTxt = b.ville ? ` à ${b.ville}` : "";
+    const titreSeo = `${typeTxt} ${transactionTxt}${villeTxt} · ${prixTxt} — SakeurImmo`;
+    const descSeo = b.description ? b.description.slice(0, 155).replace(/\n/g, " ") + "..." : `Consultez cette annonce de ${typeTxt} ${transactionTxt}${villeTxt} sur SakeurImmo.`;
+    const canonicalUrl = `https://sakeurimmo.com/annonce.html?id=${b.id}`;
+    const imageUrl = b.images && b.images[0] ? `${baseUploads}${b.images[0]}` : "https://sakeurimmo.com/images/og-image.jpg";
+
+    document.title = titreSeo;
+    document.querySelector('meta[name="description"]').setAttribute("content", descSeo);
+    document.getElementById("canonical-bien").setAttribute("href", canonicalUrl);
+    document.querySelector('meta[property="og:title"]').setAttribute("content", titreSeo);
+    document.querySelector('meta[property="og:description"]').setAttribute("content", descSeo);
+    document.getElementById("og-url-bien").setAttribute("content", canonicalUrl);
+    document.querySelector('meta[property="og:image"]').setAttribute("content", imageUrl);
+    document.querySelector('meta[name="twitter:title"]').setAttribute("content", titreSeo);
+    document.querySelector('meta[name="twitter:description"]').setAttribute("content", descSeo);
+    document.querySelector('meta[name="twitter:image"]').setAttribute("content", imageUrl);
 
     conteneur.innerHTML = `
       <div class="cachet-ref" style="margin-bottom:10px;">RÉF. TF-${String(b.id).padStart(6, "0")}</div>
