@@ -14,6 +14,17 @@ const contactsRoutes = require("./routes/contacts.routes");
 
 const app = express();
 
+// Render (et la plupart des hébergeurs Node) placent l'app derrière un proxy inverse ;
+// sans ça, express-rate-limit refuse de lire X-Forwarded-For pour identifier les clients.
+app.set("trust proxy", 1);
+
+// Filet de sécurité : une erreur synchrone dans un handler async (ex. jwt.sign avec un
+// secret manquant) devient un rejet de promesse non intercepté par Express 4 et tuait
+// tout le process. On log au lieu de laisser Node terminer le serveur.
+process.on("unhandledRejection", (err) => {
+  console.error("Rejet de promesse non géré :", err);
+});
+
 app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
 app.use(express.json({ limit: "10mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
