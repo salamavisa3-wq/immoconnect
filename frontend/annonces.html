@@ -101,9 +101,27 @@ async function chargerAnnonces(params = {}) {
       return;
     }
     grille.innerHTML = resultats.map(carteAnnonce).join("");
+    // Schema ItemList (annonces réelles) — uniquement sur la vue par défaut
+    if (!query) injecterSchemaItemList(resultats);
   } catch (err) {
     grille.innerHTML = `<p style="color:var(--rouge-alerte);">${err.message}</p>`;
   }
+}
+
+function injecterSchemaItemList(annonces) {
+  const element = document.createElement("script");
+  element.type = "application/ld+json";
+  element.textContent = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "itemListElement": annonces.map((b, i) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "url": `https://sakeurimmo.com/annonce.html?id=${b.id}`,
+      "name": b.titre,
+    })),
+  });
+  document.head.appendChild(element);
 }
 
 function carteAnnonce(b) {

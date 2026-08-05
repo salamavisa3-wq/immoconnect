@@ -44,7 +44,6 @@ app.get("/sitemap.xml", async (req, res) => {
     const pages = [
       { loc: "https://sakeurimmo.com/", lastmod: aujourdHui, prio: "1.0" },
       { loc: "https://sakeurimmo.com/annonces.html", lastmod: aujourdHui, prio: "0.9" },
-      { loc: "https://sakeurimmo.com/inscription.html", lastmod: aujourdHui, prio: "0.5" },
     ];
     const annonces = biens.map((b) => ({
       loc: `https://sakeurimmo.com/annonce.html?id=${b.id}`,

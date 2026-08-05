@@ -16,6 +16,8 @@
 <meta property="og:locale" content="fr_SN">
 
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Annonce immobilière — SakeurImmo">
+<meta name="twitter:description" content="Consultez les détails de cette annonce immobilière au Sénégal sur SakeurImmo.">
 <meta name="twitter:image" content="https://sakeurimmo.com/images/og-image.jpg">
 
 <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
@@ -52,8 +54,10 @@ async function chargerDetail() {
     const typeTxt = LIBELLES_TYPE[b.type_bien] || b.type_bien;
     const transactionTxt = b.transaction_type === "vente" ? "à vendre" : "à louer";
     const villeTxt = b.ville ? ` à ${b.ville}` : "";
-    const titreSeo = `${typeTxt} ${transactionTxt}${villeTxt} · ${prixTxt} — SakeurImmo`;
-    const descSeo = b.description ? b.description.slice(0, 155).replace(/\n/g, " ") + "..." : `Consultez cette annonce de ${typeTxt} ${transactionTxt}${villeTxt} sur SakeurImmo.`;
+    // Le libellé type contient déjà la transaction pour la plupart des types → évite le doublon « à vendre à vendre »
+    const titreType = /à vendre|à louer/.test(typeTxt) ? typeTxt : `${typeTxt} ${transactionTxt}`;
+    const titreSeo = `${titreType}${villeTxt} · ${prixTxt} — SakeurImmo`;
+    const descSeo = b.description ? b.description.slice(0, 155).replace(/\n/g, " ") + "..." : `Consultez cette annonce de ${titreType}${villeTxt} sur SakeurImmo.`;
     const canonicalUrl = `https://sakeurimmo.com/annonce.html?id=${b.id}`;
     const imageUrl = b.images && b.images[0] ? `${baseUploads}${b.images[0]}` : "https://sakeurimmo.com/images/og-image.jpg";
 
@@ -67,6 +71,35 @@ async function chargerDetail() {
     document.querySelector('meta[name="twitter:title"]').setAttribute("content", titreSeo);
     document.querySelector('meta[name="twitter:description"]').setAttribute("content", descSeo);
     document.querySelector('meta[name="twitter:image"]').setAttribute("content", imageUrl);
+
+    // Schema RealEstateListing (données réelles de l'API — SEO)
+    const imagesAbsolues = (b.images || [])
+      .map((img) => (img.startsWith("http") ? img : `https://sakeurimmo.com${img}`));
+    const schemaBien = {
+      "@context": "https://schema.org",
+      "@type": "RealEstateListing",
+      "@id": canonicalUrl,
+      "url": canonicalUrl,
+      "name": b.titre,
+      "description": b.description ? b.description.slice(0, 300) : descSeo,
+      "datePosted": String(b.cree_le || "").slice(0, 10),
+      "image": imagesAbsolues.length ? imagesAbsolues : [imageUrl],
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "SN",
+        ...(b.ville ? { "addressLocality": b.ville } : {}),
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": String(Number(b.prix) || 0),
+        "priceCurrency": "XOF",
+        "availability": "https://schema.org/InStock",
+      },
+    };
+    const elSchemaBien = document.createElement("script");
+    elSchemaBien.type = "application/ld+json";
+    elSchemaBien.textContent = JSON.stringify(schemaBien);
+    document.head.appendChild(elSchemaBien);
 
     conteneur.innerHTML = `
       <div class="cachet-ref" style="margin-bottom:10px;">RÉF. TF-${String(b.id).padStart(6, "0")}</div>
