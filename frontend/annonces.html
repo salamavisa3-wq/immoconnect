@@ -3,24 +3,50 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Toutes les annonces — SakeurImmo</title>
-<meta name="description" content="Parcourez toutes les annonces immobilières publiées au Sénégal : terrains, appartements, maisons et villas à vendre ou à louer.">
+<title>Annonces immobilières au Sénégal — SakeurImmo</title>
+<meta name="description" content="Trouvez les annonces immobilières au Sénégal : terrains, appartements, maisons et villas à vendre ou à louer, publiées directement par les propriétaires.">
 <link rel="canonical" href="https://sakeurimmo.com/annonces.html">
 
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="SakeurImmo">
-<meta property="og:title" content="Toutes les annonces — SakeurImmo">
-<meta property="og:description" content="Parcourez toutes les annonces immobilières publiées au Sénégal : terrains, appartements, maisons et villas à vendre ou à louer.">
+<meta property="og:site_name" content="SakeurImmo Sénégal">
+<meta property="og:title" content="Annonces immobilières au Sénégal — SakeurImmo">
+<meta property="og:description" content="Trouvez les annonces immobilières au Sénégal : terrains, appartements, maisons et villas à vendre ou à louer.">
 <meta property="og:image" content="https://sakeurimmo.com/images/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
 <meta property="og:url" content="https://sakeurimmo.com/annonces.html">
 <meta property="og:locale" content="fr_SN">
 
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Toutes les annonces — SakeurImmo">
+<meta name="twitter:title" content="Annonces immobilières au Sénégal — SakeurImmo">
+<meta name="twitter:description" content="Trouvez les annonces immobilières au Sénégal, publiées directement par les propriétaires.">
 <meta name="twitter:image" content="https://sakeurimmo.com/images/og-image.jpg">
 
 <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
 <link rel="stylesheet" href="css/style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebPage",
+      "@id": "https://sakeurimmo.com/annonces.html",
+      "url": "https://sakeurimmo.com/annonces.html",
+      "name": "Annonces immobilières au Sénégal — SakeurImmo",
+      "isPartOf": { "@id": "https://sakeurimmo.com/#website" },
+      "inLanguage": "fr-SN"
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://sakeurimmo.com/annonces.html#breadcrumb",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Accueil", "item": "https://sakeurimmo.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Annonces", "item": "https://sakeurimmo.com/annonces.html" }
+      ]
+    }
+  ]
+}
+</script>
 </head>
 <body>
 
@@ -156,7 +182,9 @@ document.getElementById("form-filtres").addEventListener("submit", (e) => {
   chargerAnnonces(Object.fromEntries(new FormData(e.target)));
 });
 
-chargerAnnonces();
+// Lire les filtres depuis l'URL (ex. ?ville=Dakar) pour rendre le SearchAction fonctionnel
+const filtresURL = new URLSearchParams(window.location.search);
+chargerAnnonces(Object.fromEntries(filtresURL.entries()));
 </script>
 
 </body>

@@ -52,6 +52,10 @@ app.get("/sitemap.xml", async (req, res) => {
     const pages = [
       { loc: "https://sakeurimmo.com/", lastmod: aujourdHui, prio: "1.0" },
       { loc: "https://sakeurimmo.com/annonces.html", lastmod: aujourdHui, prio: "0.9" },
+      { loc: "https://sakeurimmo.com/guides/acheter-un-terrain-au-senegal.html", lastmod: aujourdHui, prio: "0.8" },
+      { loc: "https://sakeurimmo.com/guides/vendre-son-bien-au-senegal.html", lastmod: aujourdHui, prio: "0.8" },
+      { loc: "https://sakeurimmo.com/guides/quartiers-investir-dakar-thies.html", lastmod: aujourdHui, prio: "0.8" },
+      { loc: "https://sakeurimmo.com/guides/louer-un-appartement-au-senegal.html", lastmod: aujourdHui, prio: "0.8" },
     ];
     const annonces = biens.map((b) => ({
       loc: `https://sakeurimmo.com/annonce.html?id=${b.id}`,
