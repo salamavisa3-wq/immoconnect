@@ -28,7 +28,15 @@ process.on("unhandledRejection", (err) => {
 app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
 app.use(express.json({ limit: "10mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use(express.static(path.join(__dirname, "..", "frontend")));
+// Cache CDN : HTML court (5 min), assets statiques long (24h) — max-age=0 par défaut ne met rien en cache au edge
+app.use(express.static(path.join(__dirname, "..", "frontend"), {
+  maxAge: "5m",
+  setHeaders: (res, chemin) => {
+    if (/\.(css|js|svg|jpg|jpeg|png|webp|ico)$/i.test(chemin)) {
+      res.setHeader("Cache-Control", "public, max-age=86400");
+    }
+  },
+}));
 
 // Limite de débit globale contre les abus (l'IPN PayTech a son propre parseur au-dessus)
 const limiteur = rateLimit({ windowMs: 15 * 60 * 1000, max: 300 });
@@ -71,7 +79,13 @@ app.use("/api/payments", paymentsRoutes);
 app.use("/api/biens", biensRoutes);
 app.use("/api/contacts", contactsRoutes);
 
-app.use((req, res) => res.status(404).json({ erreur: "Route introuvable." }));
+app.use((req, res) => {
+  // API → 404 JSON ; pages → vraie page 404 HTML
+  if (req.path.startsWith("/api/")) {
+    return res.status(404).json({ erreur: "Route introuvable." });
+  }
+  res.status(404).sendFile(path.join(__dirname, "..", "frontend", "404.html"));
+});
 
 app.use((err, req, res, next) => {
   console.error(err);

@@ -141,15 +141,34 @@
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "RealEstateAgent",
-  "name": "SakeurImmo",
-  "url": "https://sakeurimmo.com",
-  "logo": "https://sakeurimmo.com/images/favicon.svg",
-  "description": "Plateforme immobilière au Sénégal permettant aux propriétaires de publier directement leurs annonces (terrains, appartements, maisons, villas).",
-  "areaServed": {
-    "@type": "Country",
-    "name": "Sénégal"
-  }
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": "https://sakeurimmo.com/#website",
+      "url": "https://sakeurimmo.com/",
+      "name": "SakeurImmo",
+      "inLanguage": "fr-SN",
+      "description": "Plateforme immobilière au Sénégal permettant aux propriétaires de publier directement leurs annonces (terrains, appartements, maisons, villas).",
+      "publisher": {
+        "@id": "https://sakeurimmo.com/#organization"
+      }
+    },
+    {
+      "@type": "Organization",
+      "@id": "https://sakeurimmo.com/#organization",
+      "name": "SakeurImmo",
+      "url": "https://sakeurimmo.com",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://sakeurimmo.com/images/favicon.svg"
+      },
+      "description": "Plateforme immobilière au Sénégal : propriétaires, locataires et acheteurs publient et consultent des annonces immobilières directement.",
+      "areaServed": {
+        "@type": "Country",
+        "name": "Sénégal"
+      }
+    }
+  ]
 }
 </script>
 
