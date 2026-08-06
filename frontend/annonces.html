@@ -158,7 +158,7 @@ function carteAnnonce(b) {
     : `<span>Pas de photo</span>`;
 
   return `
-    <a class="annonce-carte${enAvant ? ' annonce-en-avant' : ''}" href="annonce.html?id=${b.id}">
+    <a class="annonce-carte${enAvant ? ' annonce-en-avant' : ''}" href="${urlAnnonce(b)}">
       <div class="annonce-image">
         <span class="badge-type">${LIBELLES_TYPE[b.type_bien] || b.type_bien}</span>
         ${enAvant ? '<span class="badge-coup-de-coeur">★ Coup de cœur</span>' : ''}

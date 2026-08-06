@@ -14,6 +14,16 @@ const contactsRoutes = require("./routes/contacts.routes");
 
 const app = express();
 
+// Slug SEO déterministe d'un titre (miroir de frontend/js/api.js)
+function slugifier(titre) {
+  return String(titre || "")
+    .normalize("NFD").replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
 // Render (et la plupart des hébergeurs Node) placent l'app derrière un proxy inverse ;
 // sans ça, express-rate-limit refuse de lire X-Forwarded-For pour identifier les clients.
 app.set("trust proxy", 1);
@@ -47,7 +57,7 @@ app.get("/api/sante", (req, res) => res.json({ statut: "ok", heure: new Date().t
 // Sitemap XML dynamique : pages statiques + annonces publiées (SEO)
 app.get("/sitemap.xml", async (req, res) => {
   try {
-    const biens = await db.all("SELECT id, cree_le FROM biens WHERE statut = 'publie' ORDER BY cree_le DESC");
+    const biens = await db.all("SELECT id, titre, cree_le FROM biens WHERE statut = 'publie' ORDER BY cree_le DESC");
     const aujourdHui = new Date().toISOString().slice(0, 10);
     const categories = [
       "terrains-a-vendre",
@@ -73,7 +83,7 @@ app.get("/sitemap.xml", async (req, res) => {
       { loc: "https://sakeurimmo.com/guides/louer-un-appartement-au-senegal.html", lastmod: aujourdHui, prio: "0.8" },
     ];
     const annonces = biens.map((b) => ({
-      loc: `https://sakeurimmo.com/annonce.html?id=${b.id}`,
+      loc: `https://sakeurimmo.com/annonce/${slugifier(b.titre) || "annonce"}-${b.id}`,
       lastmod: String(b.cree_le || "").slice(0, 10),
       prio: "0.8",
     }));
@@ -97,6 +107,11 @@ app.use("/api/auth", authRoutes);
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/biens", biensRoutes);
 app.use("/api/contacts", contactsRoutes);
+
+// Fiches annonces à URLs à slugs (SEO) : /annonce/<slug>-<id> sert la même page annonce.html
+app.get("/annonce/:slugId", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "frontend", "annonce.html"));
+});
 
 app.use((req, res) => {
   // API → 404 JSON ; pages → vraie page 404 HTML

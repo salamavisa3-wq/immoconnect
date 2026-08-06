@@ -21,15 +21,15 @@
 <meta name="twitter:image" content="https://sakeurimmo.com/images/og-image.jpg">
 
 <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
-<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 
 <header class="entete">
   <div class="conteneur barre">
-    <a href="index.html" class="logo"><span class="pastille"></span>SakeurImmo</a>
-    <nav class="nav"><a href="annonces.html">← Retour aux annonces</a></nav>
-    <a href="inscription.html" class="bouton bouton-primaire">Publier une annonce</a>
+    <a href="/index.html" class="logo"><span class="pastille"></span>SakeurImmo</a>
+    <nav class="nav"><a href="/annonces.html">← Retour aux annonces</a></nav>
+    <a href="/inscription.html" class="bouton bouton-primaire">Publier une annonce</a>
   </div>
 </header>
 
@@ -39,9 +39,11 @@
   </div>
 </section>
 
-<script src="js/api.js"></script>
+<script src="/js/api.js"></script>
 <script>
-const idBien = new URLSearchParams(window.location.search).get("id");
+// Id depuis l'URL à slug (/annonce/<slug>-<id>) avec repli sur ?id= (anciennes URLs)
+const idDansChemin = (window.location.pathname.match(/(\d+)$/) || [])[1];
+const idBien = idDansChemin || new URLSearchParams(window.location.search).get("id");
 const baseUploads = window.location.hostname === "localhost" ? "http://localhost:4000" : "";
 
 async function chargerDetail() {
@@ -58,7 +60,7 @@ async function chargerDetail() {
     const titreType = /à vendre|à louer/.test(typeTxt) ? typeTxt : `${typeTxt} ${transactionTxt}`;
     const titreSeo = `${titreType}${villeTxt} · ${prixTxt} — SakeurImmo`;
     const descSeo = b.description ? b.description.slice(0, 155).replace(/\n/g, " ") + "..." : `Consultez cette annonce de ${titreType}${villeTxt} sur SakeurImmo.`;
-    const canonicalUrl = `https://sakeurimmo.com/annonce.html?id=${b.id}`;
+    const canonicalUrl = `https://sakeurimmo.com${urlAnnonce(b)}`;
     const imageUrl = b.images && b.images[0] ? `${baseUploads}${b.images[0]}` : "https://sakeurimmo.com/images/og-image.jpg";
 
     document.title = titreSeo;

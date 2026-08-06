@@ -47,3 +47,18 @@ const LIBELLES_TYPE = {
 function formaterPrix(montant) {
   return Number(montant).toLocaleString("fr-FR") + " FCFA";
 }
+
+// Slug SEO déterministe d'un titre (accents, ponctuation, longueur)
+function slugifier(titre) {
+  return String(titre || "")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 60);
+}
+
+// URL canonique d'une annonce : /annonce/<slug>-<id>
+function urlAnnonce(b) {
+  return `/annonce/${slugifier(b.titre) || "annonce"}-${b.id}`;
+}
