@@ -14,12 +14,46 @@ const fetch = require("node-fetch");
 const crypto = require("crypto");
 const { v4: uuidv4 } = require("uuid");
 const db = require("../db");
-const { authRequis } = require("../middleware/auth");
+const { authRequis, adminRequis } = require("../middleware/auth");
 
 const router = express.Router();
 
 const MONTANT_INSCRIPTION    = Number(process.env.FRAIS_INSCRIPTION_FCFA    || 5000);
 const MONTANT_MISE_EN_AVANT  = Number(process.env.FRAIS_MISE_EN_AVANT_FCFA  || 2000);
+
+// Paiement par QR : circuit manuel de secours quand le client préfère scanner
+// plutôt que passer par la redirection PayTech. Aucune confirmation automatique
+// n'est possible (un QR statique ne porte ni montant ni référence de commande),
+// d'où la déclaration de transaction puis la validation par un administrateur.
+const QR_PAIEMENT = {
+  // Libellé commercial affiché sur le site.
+  beneficiaire: "SakeurImmo",
+  // Nom réel du compte marchand : c'est lui que l'application du payeur affichera
+  // au moment de confirmer. L'annoncer évite l'abandon au dernier écran.
+  compte_marchand: "SALAMA RAHMA VOYAGES",
+  wave: {
+    lien: "https://pay.wave.com/mqr/rat_7kWe",
+    image: "/images/qr-wave.svg",
+  },
+  orange_money: {
+    code_marchand: "562827",
+    ussd: "#144#5*562827*{montant}*code secret#",
+    image: "/images/qr-orange-money.svg",
+  },
+};
+
+function modeDemo() {
+  return !process.env.PAYTECH_API_KEY || process.env.PAYTECH_API_KEY === "votre_api_key_paytech";
+}
+
+// Les routes de simulation ne doivent pas exister dès lors que de vraies clés
+// PayTech sont configurées : sans ce garde, tout inscrit pouvait récupérer sa
+// référence via /initier puis appeler /demo-confirmer pour activer son compte
+// sans payer.
+function demoSeulement(req, res, next) {
+  if (!modeDemo()) return res.status(404).json({ erreur: "Route introuvable." });
+  next();
+}
 
 // POST /api/payments/initier — démarre le paiement des frais d'inscription
 router.post("/initier", authRequis, async (req, res) => {
@@ -29,7 +63,7 @@ router.post("/initier", authRequis, async (req, res) => {
 
   // Réutiliser un paiement déjà initié pour éviter les doublons
   const existant = await db.get(
-    "SELECT * FROM paiements WHERE user_id = ? AND type = 'inscription' AND statut = 'initie' ORDER BY id DESC LIMIT 1",
+    "SELECT * FROM paiements WHERE user_id = ? AND type = 'inscription' AND statut IN ('initie', 'en_verification') ORDER BY id DESC LIMIT 1",
     [req.user.id]
   );
 
@@ -43,9 +77,19 @@ router.post("/initier", authRequis, async (req, res) => {
     );
   }
 
+  // Paiement par QR : circuit manuel, aucun token PayTech à demander.
+  if (req.body.moyen === "qr") {
+    return res.json({
+      mode: "qr",
+      reference,
+      montant: MONTANT_INSCRIPTION,
+      url_paiement: `/paiement-qr.html?reference=${encodeURIComponent(reference)}`,
+    });
+  }
+
   // --- Mode démo : sans clés PayTech configurées, on renvoie une URL locale
   // qui simule le paiement afin que le projet fonctionne dès le clonage. ---
-  if (!process.env.PAYTECH_API_KEY || process.env.PAYTECH_API_KEY === "votre_api_key_paytech") {
+  if (modeDemo()) {
     return res.json({
       mode: "demo",
       reference,
@@ -126,7 +170,7 @@ router.post("/ipn", express.urlencoded({ extended: true }), async (req, res) => 
 });
 
 // Route de secours utilisée uniquement en mode démo (sans clés PayTech réelles)
-router.get("/demo-page/:reference", (req, res) => {
+router.get("/demo-page/:reference", demoSeulement, (req, res) => {
   const { reference } = req.params;
   res.send(`
     <html lang="fr"><head><meta charset="utf-8"><title>Paiement simulé</title>
@@ -143,7 +187,7 @@ router.get("/demo-page/:reference", (req, res) => {
   `);
 });
 
-router.post("/demo-confirmer/:reference", async (req, res) => {
+router.post("/demo-confirmer/:reference", demoSeulement, async (req, res) => {
   await confirmerPaiement(req.params.reference, "demo");
   res.redirect(`${process.env.FRONTEND_URL}/tableau-de-bord.html?paiement=succes`);
 });
@@ -193,7 +237,16 @@ router.post("/initier-mise-en-avant/:bien_id", authRequis, async (req, res) => {
     [req.user.id, bienId, reference, MONTANT_MISE_EN_AVANT]
   );
 
-  if (!process.env.PAYTECH_API_KEY || process.env.PAYTECH_API_KEY === "votre_api_key_paytech") {
+  if (req.body.moyen === "qr") {
+    return res.json({
+      mode: "qr",
+      reference,
+      montant: MONTANT_MISE_EN_AVANT,
+      url_paiement: `/paiement-qr.html?reference=${encodeURIComponent(reference)}`,
+    });
+  }
+
+  if (modeDemo()) {
     return res.json({
       mode: "demo",
       reference,
@@ -237,7 +290,7 @@ router.post("/initier-mise-en-avant/:bien_id", authRequis, async (req, res) => {
 });
 
 // Page démo mise en avant (sans clés PayTech)
-router.get("/demo-mise-en-avant/:reference", async (req, res) => {
+router.get("/demo-mise-en-avant/:reference", demoSeulement, async (req, res) => {
   const paiement = await db.get(
     "SELECT p.*, b.titre FROM paiements p LEFT JOIN biens b ON b.id = p.bien_id WHERE p.reference = ?",
     [req.params.reference]
@@ -259,7 +312,7 @@ router.get("/demo-mise-en-avant/:reference", async (req, res) => {
   `);
 });
 
-router.post("/demo-confirmer-mea/:reference", async (req, res) => {
+router.post("/demo-confirmer-mea/:reference", demoSeulement, async (req, res) => {
   await confirmerPaiement(req.params.reference, "demo");
   res.redirect(`${process.env.FRONTEND_URL || "http://localhost:5500"}/tableau-de-bord.html?paiement=mea_succes`);
 });
@@ -272,6 +325,98 @@ router.get("/statut/:reference", authRequis, async (req, res) => {
   );
   if (!paiement) return res.status(404).json({ erreur: "Paiement introuvable." });
   res.json({ statut: paiement.statut, reference: paiement.reference });
+});
+
+// --- Paiement par QR (Wave / Orange Money), circuit manuel de secours ---
+
+// GET /api/payments/qr/:reference — données à afficher sur la page de paiement par QR
+router.get("/qr/:reference", authRequis, async (req, res) => {
+  const paiement = await db.get(
+    "SELECT * FROM paiements WHERE reference = ? AND user_id = ?",
+    [req.params.reference, req.user.id]
+  );
+  if (!paiement) return res.status(404).json({ erreur: "Paiement introuvable." });
+
+  res.json({
+    reference: paiement.reference,
+    montant: paiement.montant,
+    statut: paiement.statut,
+    transaction_id: paiement.transaction_id,
+    qr: {
+      ...QR_PAIEMENT,
+      orange_money: {
+        ...QR_PAIEMENT.orange_money,
+        ussd: QR_PAIEMENT.orange_money.ussd.replace("{montant}", paiement.montant),
+      },
+    },
+  });
+});
+
+// POST /api/payments/qr/:reference/declarer — le payeur déclare son ID de transaction.
+// Aucun droit n'est accordé ici : le paiement passe en attente de vérification humaine.
+router.post("/qr/:reference/declarer", authRequis, async (req, res) => {
+  const transactionId = String(req.body.transaction_id || "").trim();
+  const moyen = req.body.moyen === "orange_money" ? "orange_money_qr" : "wave_qr";
+
+  if (transactionId.length < 4 || transactionId.length > 64) {
+    return res.status(400).json({ erreur: "Indiquez l'identifiant de transaction reçu par SMS (4 à 64 caractères)." });
+  }
+
+  const paiement = await db.get(
+    "SELECT * FROM paiements WHERE reference = ? AND user_id = ?",
+    [req.params.reference, req.user.id]
+  );
+  if (!paiement) return res.status(404).json({ erreur: "Paiement introuvable." });
+  if (paiement.statut === "reussi") {
+    return res.status(400).json({ erreur: "Ce paiement est déjà confirmé." });
+  }
+
+  await db.run(
+    "UPDATE paiements SET statut = 'en_verification', moyen_paiement = ?, transaction_id = ?, declare_le = datetime('now') WHERE reference = ?",
+    [moyen, transactionId, paiement.reference]
+  );
+
+  res.json({
+    statut: "en_verification",
+    message: "Paiement déclaré. Nous le vérifions et activons votre compte sous 24 h ouvrées.",
+  });
+});
+
+// GET /api/payments/admin/a-verifier — file d'attente des paiements QR déclarés
+router.get("/admin/a-verifier", authRequis, adminRequis, async (req, res) => {
+  const paiements = await db.all(
+    `SELECT p.*, u.nom_complet, u.email, u.telephone, b.titre AS bien_titre
+       FROM paiements p
+       JOIN users u ON u.id = p.user_id
+       LEFT JOIN biens b ON b.id = p.bien_id
+      WHERE p.statut = 'en_verification'
+      ORDER BY p.declare_le ASC`
+  );
+  res.json(paiements);
+});
+
+// POST /api/payments/admin/:reference/valider — l'admin confirme avoir reçu les fonds
+router.post("/admin/:reference/valider", authRequis, adminRequis, async (req, res) => {
+  const paiement = await db.get("SELECT * FROM paiements WHERE reference = ?", [req.params.reference]);
+  if (!paiement) return res.status(404).json({ erreur: "Paiement introuvable." });
+  if (paiement.statut !== "en_verification") {
+    return res.status(400).json({ erreur: "Seul un paiement en attente de vérification peut être validé." });
+  }
+
+  await confirmerPaiement(paiement.reference, paiement.moyen_paiement || "qr");
+  res.json({ statut: "reussi", reference: paiement.reference });
+});
+
+// POST /api/payments/admin/:reference/rejeter — fonds non retrouvés
+router.post("/admin/:reference/rejeter", authRequis, adminRequis, async (req, res) => {
+  const paiement = await db.get("SELECT * FROM paiements WHERE reference = ?", [req.params.reference]);
+  if (!paiement) return res.status(404).json({ erreur: "Paiement introuvable." });
+  if (paiement.statut !== "en_verification") {
+    return res.status(400).json({ erreur: "Seul un paiement en attente de vérification peut être rejeté." });
+  }
+
+  await db.run("UPDATE paiements SET statut = 'echoue' WHERE reference = ?", [paiement.reference]);
+  res.json({ statut: "echoue", reference: paiement.reference });
 });
 
 module.exports = router;

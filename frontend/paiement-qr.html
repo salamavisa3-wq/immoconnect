@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paiement par QR — SakeurImmo</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="entete">
+  <div class="conteneur barre">
+    <a href="index.html" class="logo"><span class="pastille"></span>SakeurImmo</a>
+    <button class="bouton-menu" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+<nav class="nav"><a href="annonces.html">Toutes les annonces</a><a href="tableau-de-bord.html">Mon espace</a></nav>
+    <a href="tableau-de-bord.html" class="bouton bouton-fantome">Mon espace</a>
+  </div>
+</header>
+
+<div class="carte-formulaire">
+  <h2 class="mt-0">Payer par QR — Wave ou Orange Money</h2>
+  <p class="aide" style="margin-bottom:22px;">
+    Scannez le code correspondant à votre opérateur, payez le montant exact, puis déclarez votre transaction ci-dessous.
+    La validation est manuelle : comptez jusqu'à 24 h ouvrées.
+  </p>
+
+  <div id="zone-erreur"></div>
+  <div id="chargement" class="aide centre">Chargement du paiement...</div>
+
+  <div id="contenu" style="display:none;">
+    <div class="bandeau-tarif" style="padding:22px 24px;margin-bottom:22px;">
+      <div>
+        <div class="montant" style="font-size:2rem;"><span id="montant"></span> <span>FCFA</span></div>
+        <div style="font-size:0.85rem;opacity:0.9;">Référence à reporter : <strong id="reference"></strong></div>
+      </div>
+    </div>
+
+    <div class="message-erreur" id="deja-declare" style="display:none;">
+      Vous avez déjà déclaré un paiement pour cette référence. Il est en cours de vérification.
+    </div>
+
+    <div class="grille-2">
+      <div class="champ centre">
+        <strong>Wave</strong>
+        <img src="/images/qr-wave.svg" alt="QR code Wave pour payer SakeurImmo" style="width:100%;max-width:220px;margin:10px auto;display:block;">
+        <a id="lien-wave" class="bouton bouton-secondaire" href="#" target="_blank" rel="noopener">Ouvrir dans Wave</a>
+      </div>
+      <div class="champ centre">
+        <strong>Orange Money</strong>
+        <img src="/images/qr-orange-money.svg" alt="QR code Orange Money pour payer SakeurImmo" style="width:100%;max-width:220px;margin:10px auto;display:block;">
+        <p class="aide">Code marchand <strong id="code-marchand"></strong><br><code id="ussd"></code></p>
+      </div>
+    </div>
+
+    <p class="aide" style="margin:18px 0 22px;">
+      Bénéficiaire : <strong id="beneficiaire"></strong>.
+      Le compte marchand apparaîtra sous le nom <strong id="compte-marchand"></strong> dans votre application — c'est normal.
+      <br><strong>Indiquez la référence <span id="reference-rappel"></span> dans le motif du transfert</strong> pour que nous retrouvions votre paiement.
+    </p>
+
+    <form id="form-declaration">
+      <div class="champ">
+        <label for="moyen">Opérateur utilisé</label>
+        <select id="moyen" name="moyen">
+          <option value="wave">Wave</option>
+          <option value="orange_money">Orange Money</option>
+        </select>
+      </div>
+      <div class="champ">
+        <label for="transaction_id">Identifiant de transaction</label>
+        <input id="transaction_id" name="transaction_id" required placeholder="Reçu par SMS après le paiement">
+      </div>
+      <button type="submit" class="bouton bouton-primaire bouton-plein-largeur">J'ai payé — déclarer ma transaction</button>
+    </form>
+    <p id="statut-declaration" class="aide centre" style="margin-top:16px;"></p>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+const zoneErreur = document.getElementById("zone-erreur");
+const reference = new URLSearchParams(window.location.search).get("reference");
+
+function afficherErreur(msg) {
+  zoneErreur.innerHTML = `<div class="message-erreur">${msg}</div>`;
+}
+
+async function charger() {
+  if (!reference) {
+    document.getElementById("chargement").style.display = "none";
+    return afficherErreur("Référence de paiement manquante. Reprenez depuis votre espace.");
+  }
+
+  try {
+    const data = await appelApi(`/payments/qr/${encodeURIComponent(reference)}`);
+    document.getElementById("montant").textContent = Number(data.montant).toLocaleString("fr-FR");
+    document.getElementById("reference").textContent = data.reference;
+    document.getElementById("reference-rappel").textContent = data.reference;
+    document.getElementById("beneficiaire").textContent = data.qr.beneficiaire;
+    document.getElementById("compte-marchand").textContent = data.qr.compte_marchand;
+    document.getElementById("lien-wave").href = data.qr.wave.lien;
+    document.getElementById("code-marchand").textContent = data.qr.orange_money.code_marchand;
+    document.getElementById("ussd").textContent = data.qr.orange_money.ussd;
+
+    if (data.statut === "reussi") {
+      window.location.href = "tableau-de-bord.html?paiement=succes";
+      return;
+    }
+    if (data.statut === "en_verification") {
+      document.getElementById("deja-declare").style.display = "block";
+    }
+
+    document.getElementById("chargement").style.display = "none";
+    document.getElementById("contenu").style.display = "block";
+  } catch (err) {
+    document.getElementById("chargement").style.display = "none";
+    afficherErreur(err.message);
+  }
+}
+
+document.getElementById("form-declaration").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  zoneErreur.innerHTML = "";
+  const bouton = e.target.querySelector("button");
+  const statutEl = document.getElementById("statut-declaration");
+  bouton.disabled = true;
+  bouton.textContent = "Envoi...";
+
+  try {
+    const data = await appelApi(`/payments/qr/${encodeURIComponent(reference)}/declarer`, {
+      method: "POST",
+      body: JSON.stringify({
+        moyen: document.getElementById("moyen").value,
+        transaction_id: document.getElementById("transaction_id").value,
+      }),
+    });
+    e.target.style.display = "none";
+    statutEl.innerHTML = `<span class="message-succes">${data.message}</span>`;
+  } catch (err) {
+    bouton.disabled = false;
+    bouton.textContent = "J'ai payé — déclarer ma transaction";
+    statutEl.textContent = "";
+    afficherErreur(err.message);
+  }
+});
+
+charger();
+</script>
+
+<script src="/js/menu.js"></script>
+</body>
+</html>

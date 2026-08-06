@@ -53,10 +53,12 @@ CREATE TABLE IF NOT EXISTS paiements (
   reference       TEXT UNIQUE NOT NULL,
   montant         INTEGER NOT NULL,
   type            TEXT NOT NULL DEFAULT 'inscription', -- inscription | mise_en_avant
-  statut          TEXT NOT NULL DEFAULT 'initie', -- initie | reussi | echoue
+  statut          TEXT NOT NULL DEFAULT 'initie', -- initie | en_verification | reussi | echoue
   moyen_paiement  TEXT,
   token_paytech   TEXT,
+  transaction_id  TEXT, -- identifiant Wave / Orange Money déclaré lors d'un paiement par QR
   cree_le         TEXT NOT NULL DEFAULT (datetime('now')),
+  declare_le      TEXT, -- horodatage de la déclaration de paiement par QR
   confirme_le     TEXT
 );
 
@@ -102,6 +104,8 @@ CREATE INDEX IF NOT EXISTS idx_contacts_bien ON contacts(bien_id);
   // Migrations incrémentales pour les bases déjà existantes
   try { await exec("ALTER TABLE paiements ADD COLUMN bien_id INTEGER REFERENCES biens(id) ON DELETE SET NULL;"); } catch (_) {}
   try { await exec("ALTER TABLE biens ADD COLUMN mise_en_avant_jusqu_au TEXT;"); } catch (_) {}
+  try { await exec("ALTER TABLE paiements ADD COLUMN transaction_id TEXT;"); } catch (_) {}
+  try { await exec("ALTER TABLE paiements ADD COLUMN declare_le TEXT;"); } catch (_) {}
 }
 
 const pretASync = initialiser();

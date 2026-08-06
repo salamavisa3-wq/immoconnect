@@ -21,6 +21,14 @@
 
 <section class="section">
   <div class="conteneur">
+    <h2>Paiements par QR à vérifier</h2>
+    <p class="aide">Vérifiez la réception des fonds sur le compte Wave / Orange Money avant de valider.</p>
+    <div id="liste-paiements">Chargement...</div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="conteneur">
     <h2>Annonces en attente de validation</h2>
     <div id="liste-attente">Chargement...</div>
   </div>
@@ -75,7 +83,55 @@ async function modererAnnonce(id, statut) {
   }
 }
 
+const LIBELLES_MOYEN = { wave_qr: "Wave", orange_money_qr: "Orange Money" };
+
+async function chargerPaiements() {
+  const conteneur = document.getElementById("liste-paiements");
+  try {
+    const paiements = await appelApi("/payments/admin/a-verifier");
+    if (paiements.length === 0) {
+      conteneur.innerHTML = `<p style="color:var(--texte-clair);">Aucun paiement en attente de vérification.</p>`;
+      return;
+    }
+    conteneur.innerHTML = `
+      <table class="table-biens">
+        <thead><tr><th>Déclaré le</th><th>Propriétaire</th><th>Objet</th><th>Montant</th><th>Opérateur</th><th>ID transaction</th><th>Référence</th><th>Actions</th></tr></thead>
+        <tbody>
+          ${paiements.map(p => `
+            <tr>
+              <td>${(p.declare_le || "").replace("T", " ")}</td>
+              <td>${p.nom_complet}<br><span class="aide">${p.email} · ${p.telephone}</span></td>
+              <td>${p.type === "inscription" ? "Inscription" : `Mise en avant — ${p.bien_titre || "annonce #" + p.bien_id}`}</td>
+              <td>${formaterPrix(p.montant)}</td>
+              <td>${LIBELLES_MOYEN[p.moyen_paiement] || p.moyen_paiement || "—"}</td>
+              <td><code>${p.transaction_id || "—"}</code></td>
+              <td><code>${p.reference}</code></td>
+              <td style="display:flex;gap:8px;">
+                <button class="bouton bouton-primaire" style="padding:6px 12px;font-size:0.8rem;" onclick="modererPaiement('${p.reference}', 'valider')">Valider</button>
+                <button class="bouton bouton-fantome" style="padding:6px 12px;font-size:0.8rem;color:var(--rouge-alerte);border-color:var(--rouge-alerte);" onclick="modererPaiement('${p.reference}', 'rejeter')">Rejeter</button>
+              </td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>`;
+  } catch (err) {
+    conteneur.innerHTML = `<p style="color:var(--rouge-alerte);">${err.message}</p>`;
+  }
+}
+
+async function modererPaiement(reference, action) {
+  const libelle = action === "valider" ? "valider" : "rejeter";
+  if (!confirm(`Confirmez-vous vouloir ${libelle} le paiement ${reference} ?`)) return;
+  try {
+    await appelApi(`/payments/admin/${encodeURIComponent(reference)}/${action}`, { method: "POST" });
+    chargerPaiements();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
 charger();
+chargerPaiements();
 </script>
 
 <script src="/js/menu.js"></script>
