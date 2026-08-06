@@ -183,14 +183,9 @@ async function chargerProfil() {
 }
 
 async function initierMiseEnAvant(bienId) {
-  if (!confirm("Mettre ce bien en avant pendant 7 jours pour 2 000 FCFA ?\nIl apparaîtra en tête des résultats avec un badge \"Coup de cœur\".")) return;
-  // OK = paiement en ligne PayTech (confirmation immédiate) ; Annuler = paiement par QR (validation manuelle).
-  const enLigne = confirm("Payer en ligne maintenant ?\n\nOK : paiement sécurisé Wave / Orange Money, activation immédiate.\nAnnuler : payer par QR à scanner, validation manuelle sous 24 h.");
+  if (!confirm("Mettre ce bien en avant pendant 7 jours pour 2 000 FCFA ?\nIl apparaîtra en tête des résultats avec un badge \"Coup de cœur\".\nVous serez redirigé vers le paiement Wave / Orange Money (vérification manuelle sous 24 h ouvrées).")) return;
   try {
-    const data = await appelApi(`/payments/initier-mise-en-avant/${bienId}`, {
-      method: "POST",
-      body: JSON.stringify(enLigne ? {} : { moyen: "qr" }),
-    });
+    const data = await appelApi(`/payments/initier-mise-en-avant/${bienId}`, { method: "POST" });
     if (data.url_paiement) window.location.href = data.url_paiement;
   } catch (err) {
     alert("Erreur : " + err.message);

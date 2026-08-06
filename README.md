@@ -3,7 +3,7 @@
 Plateforme permettant aux propriétaires de publier directement leurs biens
 (terrains, appartements à vendre/louer, appartements meublés, maisons,
 villas à vendre/louer...) moyennant des **frais d'inscription uniques de
-5000 FCFA**, payables par Orange Money ou Wave via **PayTech**.
+5000 FCFA**, payables par Orange Money ou Wave via **paiement par QR**.
 
 ## Architecture
 
@@ -16,7 +16,7 @@ sakeurimmo/
 │   ├── middleware/auth.js
 │   └── routes/
 │       ├── auth.routes.js       inscription / connexion
-│       ├── payments.routes.js   paiement PayTech (5000 FCFA)
+│       ├── payments.routes.js   paiement par QR (5000 FCFA)
 │       └── biens.routes.js      CRUD des annonces + modération
 └── frontend/             Site statique HTML / CSS / JS (aucun framework requis)
     ├── index.html            page d'accueil
@@ -36,16 +36,16 @@ sakeurimmo/
 cd backend
 npm install
 cp .env.example .env
-# Éditez .env : JWT_SECRET, et si disponibles vos clés PAYTECH_API_KEY / PAYTECH_API_SECRET
+# Éditez .env : JWT_SECRET (obligatoire), et BREVO_API_KEY / ADMIN_EMAIL (notifications e-mail, facultatif)
 npm start
 ```
 
 L'API démarre sur `http://localhost:3001`.
 
-> **Sans clés PayTech configurées**, le système bascule automatiquement en
-> **mode démo** : une page de simulation de paiement permet de tester tout
-> le parcours (inscription → paiement → activation du compte → publication
-> d'annonces) sans compte marchand réel. Idéal pour le développement.
+> **Paiement par QR (Wave / Orange Money)** : aucune clé externe requise.
+> Le propriétaire scanne le QR Wave ou Orange Money, puis déclare son ID de
+> transaction. Un administrateur vérifie la réception des fonds et active le
+> compte (sous 24 h ouvrées).
 
 ### 2. Créer un compte administrateur (modération des annonces)
 
@@ -88,26 +88,32 @@ sans écriture disque persistante en production :
    (`express.static` sur `../frontend`), donc un seul service à déployer :
    pas de configuration CORS/sous-domaine séparée nécessaire.
 
-## Paiement réel avec PayTech (production)
+## Paiement par QR (Wave / Orange Money)
 
-1. Créez un compte marchand sur [paytech.sn](https://paytech.sn).
-2. Récupérez votre `API_KEY` et `API_SECRET` dans le tableau de bord.
-3. Renseignez-les dans `backend/.env`, avec `PAYTECH_ENV=prod`.
-4. Déclarez l'URL d'IPN dans votre tableau de bord PayTech :
-   `https://votre-domaine.com/api/payments/ipn`
-5. Le paiement redirige l'utilisateur vers Orange Money ou Wave selon son
-   choix (seules ces deux méthodes sont proposées, via `target_payment`) ;
-   l'IPN active automatiquement le compte propriétaire dès confirmation
-   du paiement.
+Le paiement se fait exclusivement par QR, sans compte marchand intermédiaire :
+
+1. **Inscription** — après avoir créé son compte, le propriétaire est envoyé
+   sur `paiement-qr.html` avec sa référence (ex. `INS-12-a1b2c3d4`).
+2. **Paiement** — il scanne le QR Wave ou Orange Money (ou compose le code
+   USSD Orange Money) pour le montant exact, en indiquant la référence dans
+   le motif du transfert.
+3. **Déclaration** — il renseigne l'ID de transaction reçu par SMS
+   (`POST /api/payments/qr/:reference/declarer`).
+4. **Vérification manuelle** — un administrateur contrôle la réception des
+   fonds dans `admin.html` puis valide
+   (`POST /api/payments/admin/:reference/valider`) : le compte passe à
+   `actif` (ou le bien est mis en avant 7 jours). Un e-mail de notification
+   est envoyé à chaque déclaration (Brevo).
 
 ## Flux fonctionnel
 
 1. **Inscription** (`POST /api/auth/register`) — le compte est créé avec le
    statut `en_attente_paiement`.
-2. **Paiement** (`POST /api/payments/initier`) — génère une session de
-   paiement PayTech de 5000 FCFA.
-3. **Confirmation** — l'IPN PayTech (`POST /api/payments/ipn`) marque le
-   paiement `reussi` et passe le compte à `actif`.
+2. **Paiement** (`POST /api/payments/initier`) — génère une référence de
+   paiement par QR de 5000 FCFA et redirige vers `paiement-qr.html`.
+3. **Déclaration et vérification** — le propriétaire déclare son ID de
+   transaction ; un administrateur vérifie les fonds puis marque le
+   paiement `reussi` (`confirmerPaiement`) et le compte passe à `actif`.
 4. **Publication** (`POST /api/biens`, réservé aux comptes `actif`) — le
    propriétaire soumet son annonce (photos, prix, description...), qui
    entre en statut `en_attente`.
@@ -137,7 +143,7 @@ sans écriture disque persistante en production :
 
 - Mots de passe hashés avec bcrypt.
 - Authentification par JWT (expiration configurable).
-- Vérification de signature de l'IPN PayTech (SHA-256 de la clé/secret).
+- Paiements par QR validés manuellement par un administrateur après vérification des fonds.
 - Limitation de débit sur l'API (`express-rate-limit`).
 - Validation des types/tailles de fichiers uploadés (images uniquement, 5 Mo max).
 

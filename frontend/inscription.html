@@ -54,7 +54,7 @@
 
 <div class="carte-formulaire" id="carte-etape-2" style="display:none;">
   <h2 class="mt-0">Réglez vos frais d'inscription</h2>
-  <p class="aide" style="margin-bottom:22px;">Étape 2/2 — Paiement unique et définitif pour activer votre compte propriétaire.</p>
+  <p class="aide" style="margin-bottom:22px;">Étape 2/2 — Paiement unique et définitif, vérifié sous 24 h ouvrées, pour activer votre compte propriétaire.</p>
 
   <div class="bandeau-tarif" style="padding:22px 24px;margin-bottom:22px;">
     <div>
@@ -63,9 +63,8 @@
     </div>
   </div>
 
-  <button id="btn-payer" class="bouton bouton-primaire bouton-plein-largeur">Payer 5000 FCFA maintenant</button>
-  <button id="btn-payer-qr" class="bouton bouton-secondaire bouton-plein-largeur" style="margin-top:10px;">Payer par QR (Wave / Orange Money)</button>
-  <p id="statut-paiement" class="aide centre" style="margin-top:16px;"></p>
+  <button id="btn-payer" class="bouton bouton-primaire bouton-plein-largeur">Payer 5000 FCFA — Wave / Orange Money</button>
+  <p class="aide centre" style="margin-top:14px;">Vous scannez un QR Wave ou Orange Money, puis vous déclarez votre paiement. Compte activé après vérification (sous 24 h ouvrées).</p>
 </div>
 
 <script src="js/api.js"></script>
@@ -94,40 +93,17 @@ document.getElementById("form-inscription").addEventListener("submit", async (e)
   }
 });
 
-document.getElementById("btn-payer-qr").addEventListener("click", async () => {
-  const bouton = document.getElementById("btn-payer-qr");
+document.getElementById("btn-payer").addEventListener("click", async () => {
+  const bouton = document.getElementById("btn-payer");
   bouton.disabled = true;
   bouton.textContent = "Préparation...";
 
   try {
-    const { url_paiement } = await appelApi("/payments/initier", {
-      method: "POST",
-      body: JSON.stringify({ moyen: "qr" }),
-    });
+    const { url_paiement } = await appelApi("/payments/initier", { method: "POST" });
     window.location.href = url_paiement;
   } catch (err) {
     bouton.disabled = false;
-    bouton.textContent = "Payer par QR (Wave / Orange Money)";
-    afficherErreur(err.message);
-  }
-});
-
-document.getElementById("btn-payer").addEventListener("click", async () => {
-  const bouton = document.getElementById("btn-payer");
-  const statutEl = document.getElementById("statut-paiement");
-  bouton.disabled = true;
-  bouton.textContent = "Préparation du paiement...";
-
-  try {
-    const { url_paiement, reference, mode } = await appelApi("/payments/initier", { method: "POST" });
-    statutEl.textContent = mode === "demo"
-      ? "Mode démo actif (clés PayTech non configurées) — redirection vers la page de simulation..."
-      : "Redirection vers la page de paiement sécurisée...";
-    setTimeout(() => { window.location.href = url_paiement; }, 900);
-  } catch (err) {
-    bouton.disabled = false;
-    bouton.textContent = "Payer 5000 FCFA maintenant";
-    statutEl.textContent = "";
+    bouton.textContent = "Payer 5000 FCFA — Wave / Orange Money";
     afficherErreur(err.message);
   }
 });

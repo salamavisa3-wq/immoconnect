@@ -55,7 +55,6 @@ CREATE TABLE IF NOT EXISTS paiements (
   type            TEXT NOT NULL DEFAULT 'inscription', -- inscription | mise_en_avant
   statut          TEXT NOT NULL DEFAULT 'initie', -- initie | en_verification | reussi | echoue
   moyen_paiement  TEXT,
-  token_paytech   TEXT,
   transaction_id  TEXT, -- identifiant Wave / Orange Money déclaré lors d'un paiement par QR
   cree_le         TEXT NOT NULL DEFAULT (datetime('now')),
   declare_le      TEXT, -- horodatage de la déclaration de paiement par QR

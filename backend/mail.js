@@ -1,5 +1,5 @@
 // mail.js — Notifications e-mail transactionnelles via l'API HTTP Brevo.
-// Pas de dépendance supplémentaire : node-fetch sert déjà pour PayTech.
+// Pas de dépendance supplémentaire : node-fetch est déjà une dépendance du projet.
 //
 // Principe : l'envoi est "best-effort". Sans clé configurée, ou si Brevo est
 // indisponible, on journalise et on rend la main — une notification ratée ne

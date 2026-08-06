@@ -50,7 +50,7 @@ app.use(express.static(path.join(__dirname, "..", "frontend"), {
   },
 }));
 
-// Limite de débit globale contre les abus (l'IPN PayTech a son propre parseur au-dessus)
+// Limite de débit globale contre les abus
 const limiteur = rateLimit({ windowMs: 15 * 60 * 1000, max: 300 });
 app.use("/api/", limiteur);
 
