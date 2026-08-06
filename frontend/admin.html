@@ -23,6 +23,8 @@
   <div class="conteneur">
     <h2>Paiements par QR à vérifier</h2>
     <p class="aide">Vérifiez la réception des fonds sur le compte Wave / Orange Money avant de valider.</p>
+    <p><button id="btn-test-mail" class="bouton bouton-fantome" style="padding:6px 12px;font-size:0.8rem;">Tester l'envoi d'e-mail</button></p>
+    <div id="resultat-test-mail"></div>
     <div id="liste-paiements">Chargement...</div>
   </div>
 </section>
@@ -129,6 +131,28 @@ async function modererPaiement(reference, action) {
     alert(err.message);
   }
 }
+
+document.getElementById("btn-test-mail").addEventListener("click", async (e) => {
+  const zone = document.getElementById("resultat-test-mail");
+  e.target.disabled = true;
+  zone.innerHTML = `<p class="aide">Envoi en cours...</p>`;
+  try {
+    const d = await appelApi("/payments/admin/diagnostic-mail");
+    const classe = d.envoi.ok ? "message-succes" : "message-erreur";
+    zone.innerHTML = `
+      <div class="${classe}">
+        ${d.envoi.ok ? "E-mail de test envoyé." : "Échec de l'envoi."} ${d.envoi.raison}
+      </div>
+      <p class="aide">
+        BREVO_API_KEY : ${d.brevo_api_key_definie ? "définie" : "ABSENTE"} ·
+        ADMIN_EMAIL : ${d.admin_email || "ABSENT"} ·
+        Expéditeur : ${d.mail_expediteur || "ABSENT"}
+      </p>`;
+  } catch (err) {
+    zone.innerHTML = `<div class="message-erreur">${err.message}</div>`;
+  }
+  e.target.disabled = false;
+});
 
 charger();
 chargerPaiements();

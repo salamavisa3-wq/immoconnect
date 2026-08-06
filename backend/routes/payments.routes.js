@@ -413,6 +413,24 @@ function notifierDeclaration(user, paiement, moyen, transactionId) {
   });
 }
 
+// GET /api/payments/admin/diagnostic-mail — état de la configuration e-mail et
+// envoi d'un message de test. Permet de voir la cause exacte d'un échec depuis
+// l'interface, sans accès aux logs de l'hébergeur. La clé n'est jamais exposée.
+router.get("/admin/diagnostic-mail", authRequis, adminRequis, async (req, res) => {
+  const envoi = await envoyerEmailAdmin({
+    sujet: "Test d'envoi — SakeurImmo",
+    html: `<p>Ceci est un message de test envoyé depuis l'espace d'administration de SakeurImmo.</p>
+           <p>Si vous le recevez, les notifications de paiement par QR fonctionnent.</p>`,
+  });
+
+  res.json({
+    brevo_api_key_definie: Boolean(process.env.BREVO_API_KEY),
+    admin_email: process.env.ADMIN_EMAIL || null,
+    mail_expediteur: process.env.MAIL_EXPEDITEUR || process.env.ADMIN_EMAIL || null,
+    envoi,
+  });
+});
+
 // GET /api/payments/admin/a-verifier — file d'attente des paiements QR déclarés
 router.get("/admin/a-verifier", authRequis, adminRequis, async (req, res) => {
   const paiements = await db.all(
