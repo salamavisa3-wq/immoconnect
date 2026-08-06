@@ -15,6 +15,7 @@ const crypto = require("crypto");
 const { v4: uuidv4 } = require("uuid");
 const db = require("../db");
 const { authRequis, adminRequis } = require("../middleware/auth");
+const { envoyerEmailAdmin, echapper } = require("../mail");
 
 const router = express.Router();
 
@@ -376,11 +377,41 @@ router.post("/qr/:reference/declarer", authRequis, async (req, res) => {
     [moyen, transactionId, paiement.reference]
   );
 
+  // Notification best-effort : volontairement pas attendue, et toute erreur est
+  // absorbée par envoyerEmailAdmin — la déclaration reste valide sans e-mail.
+  notifierDeclaration(req.user, paiement, moyen, transactionId);
+
   res.json({
     statut: "en_verification",
     message: "Paiement déclaré. Nous le vérifions et activons votre compte sous 24 h ouvrées.",
   });
 });
+
+function notifierDeclaration(user, paiement, moyen, transactionId) {
+  const operateur = moyen === "orange_money_qr" ? "Orange Money" : "Wave";
+  const objet = paiement.type === "inscription"
+    ? "Inscription propriétaire"
+    : `Mise en avant (annonce #${paiement.bien_id})`;
+
+  envoyerEmailAdmin({
+    sujet: `Paiement à vérifier — ${paiement.montant} FCFA · ${paiement.reference}`,
+    html: `
+      <h2>Nouveau paiement par QR à vérifier</h2>
+      <p>Vérifiez la réception des fonds sur le compte <strong>${echapper(operateur)}</strong>
+         avant de valider dans l'espace d'administration.</p>
+      <table cellpadding="6" style="border-collapse:collapse;font-family:sans-serif;">
+        <tr><td><strong>Montant</strong></td><td>${echapper(paiement.montant)} FCFA</td></tr>
+        <tr><td><strong>Objet</strong></td><td>${echapper(objet)}</td></tr>
+        <tr><td><strong>Référence</strong></td><td><code>${echapper(paiement.reference)}</code></td></tr>
+        <tr><td><strong>Opérateur</strong></td><td>${echapper(operateur)}</td></tr>
+        <tr><td><strong>ID de transaction</strong></td><td><code>${echapper(transactionId)}</code></td></tr>
+        <tr><td><strong>Propriétaire</strong></td><td>${echapper(user.nom_complet)}</td></tr>
+        <tr><td><strong>Contact</strong></td><td>${echapper(user.email)} · ${echapper(user.telephone)}</td></tr>
+      </table>
+      <p><a href="${process.env.FRONTEND_URL || "https://sakeurimmo.com"}/admin.html">Ouvrir l'espace d'administration</a></p>
+    `,
+  });
+}
 
 // GET /api/payments/admin/a-verifier — file d'attente des paiements QR déclarés
 router.get("/admin/a-verifier", authRequis, adminRequis, async (req, res) => {
