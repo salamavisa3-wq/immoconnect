@@ -1,0 +1,16 @@
+# keepalive-sakeurimmo
+# Réveille l'instance Render free tier (dort après 15 min d'inactivité) :
+# un ping HTTP toutes les 5 min < 15 min → instance toujours chaude, TTFB ~0,2s.
+name: keepalive-sakeurimmo
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping SakeurImmo
+        run: curl -sS -o /dev/null -w "sakeurimmo.com -> HTTP %{http_code} en %{time_total}s\n" https://sakeurimmo.com/
