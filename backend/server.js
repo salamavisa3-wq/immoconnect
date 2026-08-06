@@ -49,9 +49,24 @@ app.get("/sitemap.xml", async (req, res) => {
   try {
     const biens = await db.all("SELECT id, cree_le FROM biens WHERE statut = 'publie' ORDER BY cree_le DESC");
     const aujourdHui = new Date().toISOString().slice(0, 10);
+    const categories = [
+      "terrains-a-vendre",
+      "appartements-a-vendre",
+      "appartements-a-louer",
+      "appartements-meubles",
+      "maisons-a-vendre",
+      "maisons-a-louer",
+      "villas-a-vendre",
+      "villas-a-louer",
+    ].map((slug) => ({
+      loc: `https://sakeurimmo.com/categorie/${slug}.html`,
+      lastmod: aujourdHui,
+      prio: "0.8",
+    }));
     const pages = [
       { loc: "https://sakeurimmo.com/", lastmod: aujourdHui, prio: "1.0" },
       { loc: "https://sakeurimmo.com/annonces.html", lastmod: aujourdHui, prio: "0.9" },
+      ...categories,
       { loc: "https://sakeurimmo.com/guides/acheter-un-terrain-au-senegal.html", lastmod: aujourdHui, prio: "0.8" },
       { loc: "https://sakeurimmo.com/guides/vendre-son-bien-au-senegal.html", lastmod: aujourdHui, prio: "0.8" },
       { loc: "https://sakeurimmo.com/guides/quartiers-investir-dakar-thies.html", lastmod: aujourdHui, prio: "0.8" },
