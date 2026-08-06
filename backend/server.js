@@ -35,12 +35,14 @@ process.on("unhandledRejection", (err) => {
   console.error("Rejet de promesse non géré :", err);
 });
 
-app.use(cors({ origin: process.env.FRONTEND_URL || "*" }));
+// CORS uniquement sur l'API : sans ça, Vary:Origin est envoyé sur les fichiers statiques
+// et Cloudflare ne met rien en cache (cf-cache-status: DYNAMIC = chaque requête touche Render)
+app.use("/api/", cors({ origin: process.env.FRONTEND_URL || "*" }));
 app.use(express.json({ limit: "10mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 // Cache CDN : HTML court (5 min), assets statiques long (24h) — max-age=0 par défaut ne met rien en cache au edge
 app.use(express.static(path.join(__dirname, "..", "frontend"), {
-  maxAge: "5m",
+  maxAge: "1h",
   setHeaders: (res, chemin) => {
     if (/\.(css|js|svg|jpg|jpeg|png|webp|ico)$/i.test(chemin)) {
       res.setHeader("Cache-Control", "public, max-age=86400");

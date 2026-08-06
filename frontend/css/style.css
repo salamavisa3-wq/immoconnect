@@ -97,6 +97,16 @@ img { max-width: 100%; display: block; }
 }
 .nav a:hover { color: var(--or); }
 
+.bouton-menu {
+  display: none;
+  flex-direction: column;
+  gap: 5px;
+  background: none; border: none; cursor: pointer;
+  padding: 6px 2px;
+  color: var(--sable);
+}
+.bouton-menu span { display: block; width: 24px; height: 2px; background: currentColor; border-radius: 2px; }
+
 .bouton {
   display: inline-flex;
   align-items: center;
@@ -413,7 +423,22 @@ table.table-biens tr:last-child td { border-bottom: none; }
   .grille-annonces { grid-template-columns: repeat(2, 1fr); }
   .tableau-layout { grid-template-columns: 1fr; }
   .grille-stats { grid-template-columns: repeat(2, 1fr); }
-  .nav { display: none; }
+  .entete .barre { position: relative; }
+  .bouton-menu { display: flex; }
+  .nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: var(--bleu-nuit);
+    flex-direction: column;
+    gap: 0;
+    align-items: stretch;
+    padding: 8px 20px 16px;
+    box-shadow: 0 14px 28px rgba(0,0,0,.22);
+  }
+  .nav.ouvert { display: flex; }
+  .nav a { padding: 13px 0; border-bottom: 1px solid rgba(243,236,219,0.08); }
 }
 @media (max-width: 560px) {
   .grille-types, .grille-annonces, .grille-stats { grid-template-columns: 1fr; }
