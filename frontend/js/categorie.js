@@ -26,16 +26,17 @@ function carteAnnonce(b) {
     </a>`;
 }
 
-async function chargerCategorie(type) {
+async function chargerGrille(params) {
   const grille = document.getElementById("grille-categorie");
   if (!grille) return;
   grille.innerHTML = "<p style='color:var(--texte-clair)'>Chargement des annonces...</p>";
+  const query = new URLSearchParams(params).toString();
   try {
-    const { resultats, total } = await appelApi(`/biens?type=${encodeURIComponent(type)}`);
+    const { resultats, total } = await appelApi(`/biens?${query}`);
     grille.setAttribute("data-nb", String(total || 0));
     if (resultats.length === 0) {
       grille.innerHTML = `
-        <p style="color:var(--texte-clair);">Aucune annonce dans cette catégorie pour le moment. Sur SakeurImmo, les propriétaires publient leurs biens directement — soyez le premier à publier le vôtre, dès 5000 FCFA.</p>
+        <p style="color:var(--texte-clair);">Aucune annonce ne correspond pour le moment. Sur SakeurImmo, les propriétaires publient leurs biens directement — soyez le premier à publier le vôtre, dès 5000 FCFA.</p>
         <p style="margin-top:18px;"><a href="/inscription.html" class="bouton bouton-primaire">Publier une annonce</a></p>`;
       return;
     }
@@ -47,5 +48,9 @@ async function chargerCategorie(type) {
 
 document.addEventListener("DOMContentLoaded", () => {
   const el = document.getElementById("grille-categorie");
-  if (el && el.dataset.type) chargerCategorie(el.dataset.type);
+  if (!el) return;
+  const params = {};
+  if (el.dataset.type) params.type = el.dataset.type;
+  if (el.dataset.ville) params.ville = el.dataset.ville;
+  if (Object.keys(params).length) chargerGrille(params);
 });
