@@ -106,6 +106,7 @@ CREATE INDEX IF NOT EXISTS idx_contacts_bien ON contacts(bien_id);
   try { await exec("ALTER TABLE biens ADD COLUMN mise_en_avant_jusqu_au TEXT;"); } catch (_) {}
   try { await exec("ALTER TABLE paiements ADD COLUMN transaction_id TEXT;"); } catch (_) {}
   try { await exec("ALTER TABLE paiements ADD COLUMN declare_le TEXT;"); } catch (_) {}
+  try { await exec("ALTER TABLE paiements ADD COLUMN places_creditees INTEGER NOT NULL DEFAULT 0;"); } catch (_) {}
   try { await exec("ALTER TABLE users ADD COLUMN quota_annonces INTEGER NOT NULL DEFAULT 0;"); } catch (_) {}
   // Grand-fathering : les anciens comptes actifs (modèle "illimité") gardent le plafond
   // maximum au lieu d'être bloqués à 0 place après la migration. Idempotent.

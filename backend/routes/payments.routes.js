@@ -56,9 +56,12 @@ router.post("/initier", authRequis, async (req, res) => {
     return res.status(400).json({ erreur: "Choisissez un forfait (5 000, 10 000 ou 15 000 FCFA)." });
   }
 
-  // Réutiliser un paiement déjà initié pour éviter les doublons
+  // Réutiliser un paiement déjà initié pour éviter les doublons. Seuls les paiements
+  // encore au stade 'initie' sont réutilisables : un paiement 'en_verification' a déjà
+  // été payé/déclaré pour son propre montant — un achat de places supplémentaire doit
+  // créer une nouvelle référence (sinon le crédit utiliserait le mauvais montant).
   const existant = await db.get(
-    "SELECT * FROM paiements WHERE user_id = ? AND type = 'inscription' AND statut IN ('initie', 'en_verification') ORDER BY id DESC LIMIT 1",
+    "SELECT * FROM paiements WHERE user_id = ? AND type = 'inscription' AND statut = 'initie' ORDER BY id DESC LIMIT 1",
     [req.user.id]
   );
 
@@ -70,6 +73,9 @@ router.post("/initier", authRequis, async (req, res) => {
        VALUES (?, ?, ?, 'inscription', 'initie')`,
       [req.user.id, reference, forfait.prix]
     );
+  } else if (Number(existant.montant) !== forfait.prix) {
+    // Le forfait choisi a changé entre deux initiations : re-synchroniser le montant.
+    await db.run("UPDATE paiements SET montant = ? WHERE reference = ?", [forfait.prix, reference]);
   }
 
   // Paiement unique : QR Wave / Orange Money, circuit manuel. Le body n'est lu que
@@ -83,6 +89,22 @@ router.post("/initier", authRequis, async (req, res) => {
   });
 });
 
+// Crédite les places d'un paiement d'inscription (activation du compte + quota) une
+// seule fois, grâce au flag places_creditees. Depuis l'activation instantanée, ce
+// crédit est fait dès la déclaration ; la validation admin ne le répète donc jamais.
+async function crediterInscription(paiement) {
+  if (paiement.places_creditees) return;
+  // Le montant du paiement détermine le forfait → nombre de places accordées.
+  // Le "+" couvre à la fois la 1ʳᵉ activation (0 + N) et l'ajout de places (upgrade).
+  const forfait = FORFAITS.find((f) => f.prix === Number(paiement.montant));
+  const places = forfait ? forfait.annonces : 0;
+  await db.run(
+    "UPDATE users SET statut_compte = 'actif', quota_annonces = quota_annonces + ? WHERE id = ?",
+    [places, paiement.user_id]
+  );
+  await db.run("UPDATE paiements SET places_creditees = 1 WHERE reference = ?", [paiement.reference]);
+}
+
 async function confirmerPaiement(reference, moyenPaiement) {
   const paiement = await db.get("SELECT * FROM paiements WHERE reference = ?", [reference]);
   if (!paiement || paiement.statut === "reussi") return;
@@ -93,14 +115,8 @@ async function confirmerPaiement(reference, moyenPaiement) {
   );
 
   if (paiement.type === "inscription") {
-    // Le montant du paiement détermine le forfait → nombre de places accordées.
-    // Le "+" couvre à la fois la 1ʳᵉ activation (0 + N) et l'ajout de places (upgrade).
-    const forfait = FORFAITS.find((f) => f.prix === Number(paiement.montant));
-    const places = forfait ? forfait.annonces : 0;
-    await db.run(
-      "UPDATE users SET statut_compte = 'actif', quota_annonces = quota_annonces + ? WHERE id = ?",
-      [places, paiement.user_id]
-    );
+    // Ne crédite que si la déclaration ne l'a pas déjà fait (idempotent).
+    await crediterInscription(paiement);
   } else if (paiement.type === "mise_en_avant" && paiement.bien_id) {
     await db.run(
       "UPDATE biens SET mise_en_avant = 1, mise_en_avant_jusqu_au = datetime('now', '+7 days') WHERE id = ?",
@@ -198,9 +214,20 @@ router.post("/qr/:reference/declarer", authRequis, async (req, res) => {
   // absorbée par envoyerEmailAdmin — la déclaration reste valide sans e-mail.
   notifierDeclaration(req.user, paiement, moyen, transactionId);
 
+  // Activation instantanée : le compte devient actif et les places sont créditées
+  // dès la déclaration (paiement d'inscription uniquement). Le paiement reste en
+  // 'en_verification' pour l'audit admin, qui peut le rejeter et révoquer les places.
+  let compteActive = false;
+  if (paiement.type === "inscription") {
+    await crediterInscription(paiement);
+    compteActive = true;
+  }
+
   res.json({
     statut: "en_verification",
-    message: "Paiement déclaré. Nous le vérifions et activons votre compte sous 24 h ouvrées.",
+    message: compteActive
+      ? "Paiement déclaré : votre compte est activé et vos places sont créditées immédiatement. L'équipe vérifie la transaction."
+      : "Paiement déclaré. Nous vérifions la transaction.",
   });
 });
 
@@ -283,6 +310,19 @@ router.post("/admin/:reference/rejeter", authRequis, adminRequis, async (req, re
   }
 
   await db.run("UPDATE paiements SET statut = 'echoue' WHERE reference = ?", [paiement.reference]);
+
+  // Fausse déclaration : révoquer les places déjà créditées à l'activation instantanée.
+  if (paiement.type === "inscription" && paiement.places_creditees) {
+    const forfait = FORFAITS.find((f) => f.prix === Number(paiement.montant));
+    const places = forfait ? forfait.annonces : 0;
+    const utilisateur = await db.get("SELECT quota_annonces, statut_compte FROM users WHERE id = ?", [paiement.user_id]);
+    if (utilisateur) {
+      const quota = Math.max(0, (utilisateur.quota_annonces || 0) - places);
+      const statut = quota === 0 ? "en_attente_paiement" : utilisateur.statut_compte;
+      await db.run("UPDATE users SET quota_annonces = ?, statut_compte = ? WHERE id = ?", [quota, statut, paiement.user_id]);
+    }
+  }
+
   res.json({ statut: "echoue", reference: paiement.reference });
 });
 

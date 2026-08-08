@@ -71,7 +71,7 @@
 
 <div class="carte-formulaire" id="carte-etape-2" style="display:none;">
   <h2 class="mt-0" id="titre-etape-2">Choisissez votre forfait</h2>
-  <p class="aide" style="margin-bottom:22px;" id="sous-titre-etape-2">Étape 2/2 — Paiement par QR, vérifié sous 24 h ouvrées. Chaque forfait donne droit à un nombre d'annonces actives.</p>
+  <p class="aide" style="margin-bottom:22px;" id="sous-titre-etape-2">Étape 2/2 — Paiement par QR : compte activé automatiquement après paiement. Chaque forfait donne droit à un nombre d'annonces actives.</p>
 
   <div id="zone-erreur-2"></div>
 
@@ -80,7 +80,7 @@
   </div>
 
   <button id="btn-payer" class="bouton bouton-primaire bouton-plein-largeur" disabled>Choisissez un forfait ci-dessus</button>
-  <p class="aide centre" style="margin-top:14px;">Vous scannez un QR Wave ou Orange Money, puis vous déclarez votre paiement. Compte activé et places créditées après vérification (sous 24 h ouvrées).</p>
+  <p class="aide centre" style="margin-top:14px;">Vous scannez un QR Wave ou Orange Money, puis vous déclarez votre paiement. Votre compte est activé et vos places sont créditées automatiquement.</p>
 </div>
 
 <script src="js/api.js"></script>
@@ -139,7 +139,7 @@ if (Session.estConnecte()) {
   carte2.style.display = "block";
   document.getElementById("titre-etape-2").textContent = "Ajouter des places à votre compte";
   document.getElementById("sous-titre-etape-2").textContent =
-    "Choisissez une formule : le paiement crédite les annonces correspondantes sur votre compte. Paiement par QR, vérifié sous 24 h ouvrées.";
+    "Choisissez une formule : le paiement crédite les annonces correspondantes sur votre compte, automatiquement après déclaration.";
   chargerForfaits();
 }
 
