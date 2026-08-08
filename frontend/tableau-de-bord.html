@@ -47,6 +47,7 @@
       <div class="carte-stat"><div class="valeur" id="stat-publie">—</div><div class="label">Publiées</div></div>
       <div class="carte-stat"><div class="valeur" id="stat-attente">—</div><div class="label">En attente</div></div>
       <div class="carte-stat"><div class="valeur" id="stat-vues">—</div><div class="label">Vues cumulées</div></div>
+      <div class="carte-stat"><div class="valeur" id="stat-places">—</div><div class="label">Places restantes</div></div>
     </div>
 
     <h3>Mes annonces</h3>
@@ -62,11 +63,12 @@
     </div>
 
     <div class="carte-formulaire large" id="form-nouvelle-annonce" style="margin-left:0;">
-      <h3 class="mt-0">Publier une nouvelle annonce</h3>
+      <h3 class="mt-0">Publier une nouvelle annonce <a id="lien-upgrade" href="inscription.html" style="float:right;font-size:.78rem;font-weight:600;color:var(--terre);text-decoration:underline;">+ Augmenter mes places</a></h3>
       <p class="aide" style="margin-bottom:20px;">Elle sera visible publiquement après validation par notre équipe (sous 24h).</p>
 
       <div id="zone-erreur-annonce"></div>
       <div id="zone-succes-annonce"></div>
+      <div id="quota-notice" style="display:none;"></div>
 
       <form id="form-annonce">
         <div class="grille-2">
@@ -165,8 +167,8 @@ async function chargerProfil() {
     if (user.statut_compte !== "actif") {
       banniere.innerHTML = `
         <div class="message-erreur" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-          <span>Votre compte n'est pas encore actif. Réglez les 5000 FCFA d'inscription pour publier des annonces.</span>
-          <a href="inscription.html" class="bouton bouton-primaire" style="padding:8px 16px;">Régler maintenant</a>
+          <span>Votre compte n'est pas encore actif. Choisissez un forfait (5 000, 10 000 ou 15 000 FCFA) pour activer votre compte et publier vos annonces.</span>
+          <a href="inscription.html" class="bouton bouton-primaire" style="padding:8px 16px;">Choisir un forfait</a>
         </div>`;
       document.getElementById("btn-soumettre-annonce").disabled = true;
     } else if (paramPaiement === "mea_succes") {
@@ -176,9 +178,32 @@ async function chargerProfil() {
     } else {
       banniere.innerHTML = `<div class="message-succes">Compte actif — Bienvenue ${user.nom_complet.split(" ")[0]}, vous pouvez publier vos annonces.</div>`;
     }
+    majPlacesRestantes();
   } catch (err) {
     Session.clear();
     window.location.href = "connexion.html";
+  }
+}
+
+let nbActives = 0;
+
+// Met à jour la carte "Places restantes" et désactive la soumission à quota atteint.
+function majPlacesRestantes() {
+  const user = Session.getUser();
+  const quota = (user && user.quota_annonces) || 0;
+  const restantes = Math.max(0, quota - nbActives);
+  document.getElementById("stat-places").textContent = restantes + " / " + quota;
+
+  const bouton = document.getElementById("btn-soumettre-annonce");
+  const notice = document.getElementById("quota-notice");
+  if (user && user.statut_compte === "actif" && quota > 0 && restantes <= 0) {
+    bouton.disabled = true;
+    notice.style.display = "block";
+    notice.innerHTML = `<div class="message-erreur">Vous avez utilisé toutes vos places (${quota} annonce${quota > 1 ? "s" : ""} active${quota > 1 ? "s" : ""}). Supprimez une annonce ou <a href="inscription.html" style="color:var(--terre);font-weight:600;">choisissez un forfait supérieur</a>.</div>`;
+  } else {
+    notice.style.display = "none";
+    if (!user || user.statut_compte !== "actif" || quota === 0) bouton.disabled = true;
+    else bouton.disabled = false;
   }
 }
 
@@ -201,6 +226,8 @@ async function chargerMesAnnonces() {
     document.getElementById("stat-publie").textContent = biens.filter(b => b.statut === "publie").length;
     document.getElementById("stat-attente").textContent = biens.filter(b => b.statut === "en_attente").length;
     document.getElementById("stat-vues").textContent = biens.reduce((s, b) => s + (b.vues || 0), 0);
+    nbActives = biens.filter(b => b.statut === "en_attente" || b.statut === "publie").length;
+    majPlacesRestantes();
 
     if (biens.length === 0) {
       corps.innerHTML = `<tr><td colspan="8" class="centre" style="color:var(--texte-clair);padding:24px;">Aucune annonce pour l'instant. Publiez-en une ci-dessous.</td></tr>`;

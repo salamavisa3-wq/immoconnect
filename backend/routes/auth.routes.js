@@ -5,6 +5,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("../db");
+const { FORFAITS } = require("../forfaits");
 const { authRequis } = require("../middleware/auth");
 
 const router = express.Router();
@@ -22,7 +23,7 @@ function assainirUser(user) {
 
 // POST /api/auth/register
 // Crée le compte propriétaire avec statut "en_attente_paiement".
-// Il devra régler les 5000 FCFA (voir /api/payments) avant de pouvoir publier.
+// Il devra choisir un forfait et régler (voir /api/payments) avant de pouvoir publier.
 router.post("/register", async (req, res) => {
   const { nom_complet, email, telephone, ville, mot_de_passe } = req.body;
 
@@ -50,10 +51,10 @@ router.post("/register", async (req, res) => {
   const token = genererToken(user);
 
   res.status(201).json({
-    message: "Compte créé. Réglez les frais d'inscription de 5000 FCFA pour l'activer.",
+    message: "Compte créé. Choisissez votre forfait (5 000, 10 000 ou 15 000 FCFA) pour activer votre compte.",
     token,
     user: assainirUser(user),
-    frais_inscription_fcfa: Number(process.env.FRAIS_INSCRIPTION_FCFA || 5000),
+    forfaits: FORFAITS,
   });
 });
 

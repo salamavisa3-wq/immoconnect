@@ -1,26 +1,27 @@
-// routes/payments.routes.js — Paiement des frais d'inscription (5000 FCFA)
-// et de la mise en avant (2000 FCFA / 7 jours) par QR : Wave ou Orange Money.
+// routes/payments.routes.js — Paiement des formules d'abonnement propriétaire
+// (5 000 / 10 000 / 15 000 FCFA pour 5 / 10 / 15 annonces) et de la mise en
+// avant (2000 FCFA / 7 jours) par QR : Wave ou Orange Money.
 // C'est l'UNIQUE méthode de paiement — aucun agrégateur externe, aucune IPN.
 //
 // Flux :
-//  1. POST /api/payments/initier (ou /initier-mise-en-avant/:bien_id) crée un
-//     enregistrement "paiements" (statut 'initie') et renvoie l'URL
+//  1. POST /api/payments/initier { forfait: 0|1|2 } (ou /initier-mise-en-avant/:bien_id)
+//     crée un enregistrement "paiements" (statut 'initie') et renvoie l'URL
 //     /paiement-qr.html?reference=...
 //  2. Le client scanne le QR Wave ou Orange Money (montant exact, référence dans
 //     le motif) puis déclare son ID de transaction
 //     (POST /api/payments/qr/:reference/declarer) → statut 'en_verification'
 //  3. Un administrateur vérifie la réception des fonds dans admin.html puis
-//     valide (confirmerPaiement) → compte 'actif' / bien mis en avant 7 jours.
+//     valide (confirmerPaiement) → quota d'annonces accordé / bien mis en avant 7 jours.
 
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const db = require("../db");
+const { FORFAITS } = require("../forfaits");
 const { authRequis, adminRequis } = require("../middleware/auth");
 const { envoyerEmailAdmin, echapper } = require("../mail");
 
 const router = express.Router();
 
-const MONTANT_INSCRIPTION    = Number(process.env.FRAIS_INSCRIPTION_FCFA    || 5000);
 const MONTANT_MISE_EN_AVANT  = Number(process.env.FRAIS_MISE_EN_AVANT_FCFA  || 2000);
 
 // Paiement par QR : unique méthode de paiement. Aucune confirmation automatique
@@ -43,10 +44,16 @@ const QR_PAIEMENT = {
   },
 };
 
-// POST /api/payments/initier — démarre le paiement des frais d'inscription
+// GET /api/payments/forfaits — liste des formules d'abonnement (public, page d'inscription)
+router.get("/forfaits", (req, res) => {
+  res.json({ forfaits: FORFAITS });
+});
+
+// POST /api/payments/initier — démarre le paiement d'un forfait (inscription ou ajout de places)
 router.post("/initier", authRequis, async (req, res) => {
-  if (req.user.statut_compte === "actif") {
-    return res.status(400).json({ erreur: "Votre compte est déjà actif." });
+  const forfait = FORFAITS[Number(req.body.forfait)];
+  if (!forfait) {
+    return res.status(400).json({ erreur: "Choisissez un forfait (5 000, 10 000 ou 15 000 FCFA)." });
   }
 
   // Réutiliser un paiement déjà initié pour éviter les doublons
@@ -61,16 +68,17 @@ router.post("/initier", authRequis, async (req, res) => {
     await db.run(
       `INSERT INTO paiements (user_id, reference, montant, type, statut)
        VALUES (?, ?, ?, 'inscription', 'initie')`,
-      [req.user.id, reference, MONTANT_INSCRIPTION]
+      [req.user.id, reference, forfait.prix]
     );
   }
 
-  // Paiement unique : QR Wave / Orange Money, circuit manuel. Le body est ignoré
-  // (rétrocompat : les anciens clients peuvent encore envoyer { moyen: "qr" }).
+  // Paiement unique : QR Wave / Orange Money, circuit manuel. Le body n'est lu que
+  // pour le choix du forfait (rétrocompat : les anciens clients peuvent envoyer { moyen: "qr" }).
   res.json({
     mode: "qr",
     reference,
-    montant: MONTANT_INSCRIPTION,
+    montant: forfait.prix,
+    annonces: forfait.annonces,
     url_paiement: `/paiement-qr.html?reference=${encodeURIComponent(reference)}`,
   });
 });
@@ -85,7 +93,14 @@ async function confirmerPaiement(reference, moyenPaiement) {
   );
 
   if (paiement.type === "inscription") {
-    await db.run("UPDATE users SET statut_compte = 'actif' WHERE id = ?", [paiement.user_id]);
+    // Le montant du paiement détermine le forfait → nombre de places accordées.
+    // Le "+" couvre à la fois la 1ʳᵉ activation (0 + N) et l'ajout de places (upgrade).
+    const forfait = FORFAITS.find((f) => f.prix === Number(paiement.montant));
+    const places = forfait ? forfait.annonces : 0;
+    await db.run(
+      "UPDATE users SET statut_compte = 'actif', quota_annonces = quota_annonces + ? WHERE id = ?",
+      [places, paiement.user_id]
+    );
   } else if (paiement.type === "mise_en_avant" && paiement.bien_id) {
     await db.run(
       "UPDATE biens SET mise_en_avant = 1, mise_en_avant_jusqu_au = datetime('now', '+7 days') WHERE id = ?",
@@ -191,8 +206,9 @@ router.post("/qr/:reference/declarer", authRequis, async (req, res) => {
 
 function notifierDeclaration(user, paiement, moyen, transactionId) {
   const operateur = moyen === "orange_money_qr" ? "Orange Money" : "Wave";
+  const forfait = FORFAITS.find((f) => f.prix === Number(paiement.montant));
   const objet = paiement.type === "inscription"
-    ? "Inscription propriétaire"
+    ? `Inscription — ${forfait ? `${forfait.annonces} annonces (${forfait.prix} FCFA)` : `${paiement.montant} FCFA`}`
     : `Mise en avant (annonce #${paiement.bien_id})`;
 
   envoyerEmailAdmin({

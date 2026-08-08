@@ -7,6 +7,23 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
 <link rel="stylesheet" href="css/style.css">
+<style>
+  .grille-forfaits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+  .carte-forfait {
+    border: 2px solid var(--sable-fonce); border-radius: var(--rayon);
+    padding: 20px 16px; text-align: center; cursor: pointer; background: var(--blanc);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .carte-forfait:hover { border-color: var(--terre-clair); }
+  .carte-forfait.selectionne { border-color: var(--or); box-shadow: 0 0 0 3px rgba(200,155,60,.25); }
+  .carte-forfait .prix { font-family: var(--police-titre); font-size: 1.7rem; color: var(--bleu-nuit); }
+  .carte-forfait .prix span { font-size: .9rem; font-weight: 500; opacity: .85; }
+  .carte-forfait .annonces { font-weight: 600; color: var(--terre); margin-top: 6px; }
+  .carte-forfait .badge { display: inline-block; margin-top: 10px; font-size: .72rem; font-weight: 700;
+    color: var(--bleu-nuit); background: var(--sable); border-radius: 10px; padding: 2px 10px; }
+  .carte-forfait.selectionne .badge { background: var(--or); color: var(--bleu-nuit); }
+  @media (max-width: 720px) { .grille-forfaits { grid-template-columns: 1fr; } }
+</style>
 </head>
 <body>
 
@@ -21,7 +38,7 @@
 
 <div class="carte-formulaire" id="carte-etape-1">
   <h2 class="mt-0">Créer votre compte propriétaire</h2>
-  <p class="aide" style="margin-bottom:22px;">Étape 1/2 — Vos informations. L'étape suivante est le paiement des frais d'inscription (5000 FCFA).</p>
+  <p class="aide" style="margin-bottom:22px;">Étape 1/2 — Vos informations. L'étape suivante est le choix de votre forfait (5 000, 10 000 ou 15 000 FCFA).</p>
 
   <div id="zone-erreur"></div>
 
@@ -48,23 +65,22 @@
       <label>Mot de passe</label>
       <input type="password" name="mot_de_passe" required minlength="6" placeholder="6 caractères minimum">
     </div>
-    <button type="submit" class="bouton bouton-primaire bouton-plein-largeur">Continuer vers le paiement</button>
+    <button type="submit" class="bouton bouton-primaire bouton-plein-largeur">Continuer vers le choix du forfait</button>
   </form>
 </div>
 
 <div class="carte-formulaire" id="carte-etape-2" style="display:none;">
-  <h2 class="mt-0">Réglez vos frais d'inscription</h2>
-  <p class="aide" style="margin-bottom:22px;">Étape 2/2 — Paiement unique et définitif, vérifié sous 24 h ouvrées, pour activer votre compte propriétaire.</p>
+  <h2 class="mt-0" id="titre-etape-2">Choisissez votre forfait</h2>
+  <p class="aide" style="margin-bottom:22px;" id="sous-titre-etape-2">Étape 2/2 — Paiement par QR, vérifié sous 24 h ouvrées. Chaque forfait donne droit à un nombre d'annonces actives.</p>
 
-  <div class="bandeau-tarif" style="padding:22px 24px;margin-bottom:22px;">
-    <div>
-      <div class="montant" style="font-size:2rem;">5 000 <span>FCFA</span></div>
-      <div style="font-size:0.85rem;opacity:0.9;">Orange Money · Wave</div>
-    </div>
+  <div id="zone-erreur-2"></div>
+
+  <div class="grille-forfaits" id="grille-forfaits">
+    <p class="aide centre" style="grid-column:1/-1;">Chargement des forfaits...</p>
   </div>
 
-  <button id="btn-payer" class="bouton bouton-primaire bouton-plein-largeur">Payer 5000 FCFA — Wave / Orange Money</button>
-  <p class="aide centre" style="margin-top:14px;">Vous scannez un QR Wave ou Orange Money, puis vous déclarez votre paiement. Compte activé après vérification (sous 24 h ouvrées).</p>
+  <button id="btn-payer" class="bouton bouton-primaire bouton-plein-largeur" disabled>Choisissez un forfait ci-dessus</button>
+  <p class="aide centre" style="margin-top:14px;">Vous scannez un QR Wave ou Orange Money, puis vous déclarez votre paiement. Compte activé et places créditées après vérification (sous 24 h ouvrées).</p>
 </div>
 
 <script src="js/api.js"></script>
@@ -72,9 +88,59 @@
 const zoneErreur = document.getElementById("zone-erreur");
 const carte1 = document.getElementById("carte-etape-1");
 const carte2 = document.getElementById("carte-etape-2");
+const grille = document.getElementById("grille-forfaits");
+const btnPayer = document.getElementById("btn-payer");
+let forfaits = [];
+let indexChoisi = null;
 
 function afficherErreur(msg) {
   zoneErreur.innerHTML = `<div class="message-erreur">${msg}</div>`;
+}
+
+function formaterPrixFr(montant) {
+  return Number(montant).toLocaleString("fr-FR") + " FCFA";
+}
+
+async function chargerForfaits() {
+  try {
+    const data = await appelApi("/payments/forfaits");
+    forfaits = data.forfaits || [];
+    if (forfaits.length === 0) {
+      grille.innerHTML = `<p class="aide centre" style="grid-column:1/-1;">Aucun forfait disponible pour le moment.</p>`;
+      return;
+    }
+    grille.innerHTML = forfaits.map((f, i) => `
+      <div class="carte-forfait" data-index="${i}" role="button" tabindex="0" aria-label="Forfait ${f.prix} FCFA pour ${f.annonces} annonces">
+        <div class="prix">${Number(f.prix).toLocaleString("fr-FR")} <span>FCFA</span></div>
+        <div class="annonces">${f.annonces} annonces</div>
+        <div class="badge">${i === 0 ? "Dès l'inscription" : "Plus de places"}</div>
+      </div>`).join("");
+
+    grille.querySelectorAll(".carte-forfait").forEach((carte) => {
+      const selectionner = () => {
+        grille.querySelectorAll(".carte-forfait").forEach((c) => c.classList.remove("selectionne"));
+        carte.classList.add("selectionne");
+        indexChoisi = Number(carte.dataset.index);
+        const f = forfaits[indexChoisi];
+        btnPayer.disabled = false;
+        btnPayer.textContent = `Payer ${formaterPrixFr(f.prix)} — Wave / Orange Money`;
+      };
+      carte.addEventListener("click", selectionner);
+      carte.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectionner(); } });
+    });
+  } catch (err) {
+    grille.innerHTML = `<p class="aide centre" style="grid-column:1/-1;">${err.message}</p>`;
+  }
+}
+
+// Utilisateur déjà connecté (achat de places supplémentaires) : on saute l'étape 1.
+if (Session.estConnecte()) {
+  carte1.style.display = "none";
+  carte2.style.display = "block";
+  document.getElementById("titre-etape-2").textContent = "Ajouter des places à votre compte";
+  document.getElementById("sous-titre-etape-2").textContent =
+    "Choisissez une formule : le paiement crédite les annonces correspondantes sur votre compte. Paiement par QR, vérifié sous 24 h ouvrées.";
+  chargerForfaits();
 }
 
 document.getElementById("form-inscription").addEventListener("submit", async (e) => {
@@ -88,23 +154,25 @@ document.getElementById("form-inscription").addEventListener("submit", async (e)
     Session.setUser(reponse.user);
     carte1.style.display = "none";
     carte2.style.display = "block";
+    chargerForfaits();
   } catch (err) {
     afficherErreur(err.message);
   }
 });
 
-document.getElementById("btn-payer").addEventListener("click", async () => {
-  const bouton = document.getElementById("btn-payer");
-  bouton.disabled = true;
-  bouton.textContent = "Préparation...";
+btnPayer.addEventListener("click", async () => {
+  if (indexChoisi === null) return;
+  btnPayer.disabled = true;
+  btnPayer.textContent = "Préparation...";
 
   try {
-    const { url_paiement } = await appelApi("/payments/initier", { method: "POST" });
+    const { url_paiement } = await appelApi("/payments/initier", { method: "POST", body: JSON.stringify({ forfait: indexChoisi }) });
     window.location.href = url_paiement;
   } catch (err) {
-    bouton.disabled = false;
-    bouton.textContent = "Payer 5000 FCFA — Wave / Orange Money";
-    afficherErreur(err.message);
+    btnPayer.disabled = false;
+    const f = forfaits[indexChoisi];
+    btnPayer.textContent = f ? `Payer ${formaterPrixFr(f.prix)} — Wave / Orange Money` : "Choisissez un forfait ci-dessus";
+    document.getElementById("zone-erreur-2").innerHTML = `<div class="message-erreur">${err.message}</div>`;
   }
 });
 </script>

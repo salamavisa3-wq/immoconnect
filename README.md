@@ -2,8 +2,9 @@
 
 Plateforme permettant aux propriétaires de publier directement leurs biens
 (terrains, appartements à vendre/louer, appartements meublés, maisons,
-villas à vendre/louer...) moyennant des **frais d'inscription uniques de
-5000 FCFA**, payables par Orange Money ou Wave via **paiement par QR**.
+villas à vendre/louer...) moyennant une **formule d'abonnement** de 5 000,
+10 000 ou 15 000 FCFA (pour 5, 10 ou 15 annonces actives), payables par Orange
+Money ou Wave via **paiement par QR**.
 
 ## Architecture
 
@@ -16,7 +17,7 @@ sakeurimmo/
 │   ├── middleware/auth.js
 │   └── routes/
 │       ├── auth.routes.js       inscription / connexion
-│       ├── payments.routes.js   paiement par QR (5000 FCFA)
+│       ├── payments.routes.js   paiement par QR (formules 5 000 / 10 000 / 15 000 FCFA)
 │       └── biens.routes.js      CRUD des annonces + modération
 └── frontend/             Site statique HTML / CSS / JS (aucun framework requis)
     ├── index.html            page d'accueil
@@ -110,10 +111,12 @@ Le paiement se fait exclusivement par QR, sans compte marchand intermédiaire :
 1. **Inscription** (`POST /api/auth/register`) — le compte est créé avec le
    statut `en_attente_paiement`.
 2. **Paiement** (`POST /api/payments/initier`) — génère une référence de
-   paiement par QR de 5000 FCFA et redirige vers `paiement-qr.html`.
+   paiement par QR de la formule choisie (5 000 / 10 000 / 15 000 FCFA) et
+   redirige vers `paiement-qr.html`.
 3. **Déclaration et vérification** — le propriétaire déclare son ID de
    transaction ; un administrateur vérifie les fonds puis marque le
-   paiement `reussi` (`confirmerPaiement`) et le compte passe à `actif`.
+   paiement `reussi` (`confirmerPaiement`) et le compte passe à `actif`
+   avec les places d'annonces correspondant à la formule.
 4. **Publication** (`POST /api/biens`, réservé aux comptes `actif`) — le
    propriétaire soumet son annonce (photos, prix, description...), qui
    entre en statut `en_attente`.

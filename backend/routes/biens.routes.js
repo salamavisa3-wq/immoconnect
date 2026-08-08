@@ -150,7 +150,7 @@ router.get("/moi/liste", authRequis, async (req, res) => {
   res.json(biens.map((b) => ({ ...b, images: JSON.parse(b.images || "[]") })));
 });
 
-// POST /api/biens — créer une annonce (compte actif = à jour des 5000 FCFA requis)
+// POST /api/biens — créer une annonce (compte actif + places de quota disponibles)
 router.post("/", authRequis, compteActifRequis, upload.array("images", 8), async (req, res) => {
   const {
     titre,
@@ -170,6 +170,19 @@ router.post("/", authRequis, compteActifRequis, upload.array("images", 8), async
   }
   if (!TYPES_VALIDES.includes(type_bien)) {
     return res.status(400).json({ erreur: "Type de bien invalide." });
+  }
+
+  // Quota : une place = une annonce active (en attente ou publiée).
+  // Supprimée ou refusée → place libérée (non comptée ici).
+  const quota = (await db.get("SELECT quota_annonces FROM users WHERE id = ?", [req.user.id])).quota_annonces || 0;
+  const actives = (await db.get(
+    "SELECT COUNT(*) AS n FROM biens WHERE user_id = ? AND statut IN ('en_attente', 'publie')",
+    [req.user.id]
+  )).n;
+  if (actives >= quota) {
+    return res.status(403).json({
+      erreur: `Quota atteint (${quota} annonce${quota > 1 ? "s" : ""} active${quota > 1 ? "s" : ""}). Supprimez une annonce ou choisissez un forfait supérieur.`,
+    });
   }
 
   let images;

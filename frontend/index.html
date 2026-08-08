@@ -24,6 +24,18 @@
 
 <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
 <link rel="stylesheet" href="css/style.css">
+<style>
+  .grille-formules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .carte-formule { background: var(--blanc); border: 1px solid var(--sable-fonce); border-radius: var(--rayon); padding: 26px 22px; text-align: center; transition: border-color .15s, transform .15s; }
+  .carte-formule:hover { border-color: var(--terre); transform: translateY(-3px); }
+  .carte-formule .prix { font-family: var(--police-titre); font-size: 2.1rem; color: var(--terre); }
+  .carte-formule .prix span { font-size: 1rem; font-weight: 500; opacity: .85; }
+  .carte-formule .annonces { font-weight: 700; color: var(--bleu-nuit); margin: 6px 0 14px; }
+  .carte-formule ul { list-style: none; padding: 0; margin: 0 0 18px; font-size: .86rem; color: var(--texte-clair); text-align: left; }
+  .carte-formule li { padding: 3px 0; }
+  .carte-formule li::before { content: "✓ "; color: var(--vert-baobab); }
+  @media (max-width: 720px) { .grille-formules { grid-template-columns: 1fr; } }
+</style>
 </head>
 <body>
 
@@ -46,7 +58,7 @@
     <div>
       <div class="eyebrow">Plateforme immobilière — Sénégal</div>
       <h1>Publiez votre bien immobilier au Sénégal, <em>touchez les bons acheteurs</em>, sans intermédiaire.</h1>
-      <p class="lead">Terrains, appartements, maisons, villas — à vendre ou à louer. Créez votre compte propriétaire, réglez 5000 FCFA une seule fois, et publiez vos annonces directement.</p>
+      <p class="lead">Terrains, appartements, maisons, villas — à vendre ou à louer. Créez votre compte propriétaire, choisissez un forfait dès 5 000 FCFA, et publiez vos annonces directement.</p>
       <div class="hero-actions">
         <a href="inscription.html" class="bouton bouton-primaire">Devenir propriétaire vendeur</a>
         <a href="annonces.html" class="bouton bouton-fantome">Parcourir les annonces</a>
@@ -106,8 +118,8 @@
       </div>
       <div class="etape">
         <span class="chiffre">02</span>
-        <h4>Réglez 5000 FCFA</h4>
-        <p>Un paiement unique à l'inscription, via Orange Money ou Wave.</p>
+        <h4>Choisissez votre forfait</h4>
+        <p>5 000, 10 000 ou 15 000 FCFA selon votre nombre d'annonces, via Orange Money ou Wave.</p>
       </div>
       <div class="etape">
         <span class="chiffre">03</span>
@@ -152,16 +164,29 @@
 
 <section class="section" id="tarif">
   <div class="conteneur">
-    <div class="bandeau-tarif">
-      <div>
-        <div class="montant">5 000 <span>FCFA</span></div>
-        <ul>
-          <li>Paiement unique à l'inscription</li>
-          <li>Publication illimitée de vos biens</li>
-          <li>Compte propriétaire vérifié</li>
-        </ul>
+    <div class="section-tete">
+      <h2>Une formule pour chaque volume d'annonces</h2>
+      <p>Paiement par QR (Orange Money / Wave), vérifié sous 24 h ouvrées. Une annonce supprimée ou refusée libère sa place.</p>
+    </div>
+    <div class="grille-formules">
+      <div class="carte-formule">
+        <div class="prix">5 000 <span>FCFA</span></div>
+        <div class="annonces">5 annonces</div>
+        <ul><li>Compte activé sous 24 h</li><li>Annonces validées par notre équipe</li><li>Sans commission sur la vente</li></ul>
+        <a href="inscription.html" class="bouton bouton-secondaire">Choisir</a>
       </div>
-      <a href="inscription.html" class="bouton bouton-secondaire">Commencer maintenant</a>
+      <div class="carte-formule">
+        <div class="prix">10 000 <span>FCFA</span></div>
+        <div class="annonces">10 annonces</div>
+        <ul><li>Compte activé sous 24 h</li><li>Annonces validées par notre équipe</li><li>Sans commission sur la vente</li></ul>
+        <a href="inscription.html" class="bouton bouton-secondaire">Choisir</a>
+      </div>
+      <div class="carte-formule">
+        <div class="prix">15 000 <span>FCFA</span></div>
+        <div class="annonces">15 annonces</div>
+        <ul><li>Compte activé sous 24 h</li><li>Annonces validées par notre équipe</li><li>Sans commission sur la vente</li></ul>
+        <a href="inscription.html" class="bouton bouton-secondaire">Choisir</a>
+      </div>
     </div>
   </div>
 </section>

@@ -25,7 +25,7 @@ async function authRequis(req, res, next) {
 function compteActifRequis(req, res, next) {
   if (req.user.statut_compte !== "actif") {
     return res.status(403).json({
-      erreur: "Votre compte n'est pas encore actif. Réglez les frais d'inscription (5000 FCFA) pour publier des annonces.",
+      erreur: "Votre compte n'est pas encore actif. Choisissez un forfait (5 000, 10 000 ou 15 000 FCFA) pour activer votre compte et publier vos annonces.",
     });
   }
   next();

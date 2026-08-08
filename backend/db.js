@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS users (
   mot_de_passe  TEXT NOT NULL,
   role          TEXT NOT NULL DEFAULT 'proprietaire', -- proprietaire | admin
   statut_compte TEXT NOT NULL DEFAULT 'en_attente_paiement', -- en_attente_paiement | actif | suspendu
+  quota_annonces INTEGER NOT NULL DEFAULT 0, -- nombre d'annonces actives payées (forfaits 5/10/15)
   cree_le       TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
@@ -105,6 +106,10 @@ CREATE INDEX IF NOT EXISTS idx_contacts_bien ON contacts(bien_id);
   try { await exec("ALTER TABLE biens ADD COLUMN mise_en_avant_jusqu_au TEXT;"); } catch (_) {}
   try { await exec("ALTER TABLE paiements ADD COLUMN transaction_id TEXT;"); } catch (_) {}
   try { await exec("ALTER TABLE paiements ADD COLUMN declare_le TEXT;"); } catch (_) {}
+  try { await exec("ALTER TABLE users ADD COLUMN quota_annonces INTEGER NOT NULL DEFAULT 0;"); } catch (_) {}
+  // Grand-fathering : les anciens comptes actifs (modèle "illimité") gardent le plafond
+  // maximum au lieu d'être bloqués à 0 place après la migration. Idempotent.
+  try { await exec("UPDATE users SET quota_annonces = 15 WHERE statut_compte = 'actif' AND quota_annonces = 0;"); } catch (_) {}
 }
 
 const pretASync = initialiser();

@@ -86,6 +86,7 @@ async function modererAnnonce(id, statut) {
 }
 
 const LIBELLES_MOYEN = { wave_qr: "Wave", orange_money_qr: "Orange Money" };
+const LIBELLES_FORFAIT = { 5000: "5 annonces", 10000: "10 annonces", 15000: "15 annonces" };
 
 async function chargerPaiements() {
   const conteneur = document.getElementById("liste-paiements");
@@ -103,7 +104,7 @@ async function chargerPaiements() {
             <tr>
               <td>${(p.declare_le || "").replace("T", " ")}</td>
               <td>${p.nom_complet}<br><span class="aide">${p.email} · ${p.telephone}</span></td>
-              <td>${p.type === "inscription" ? "Inscription" : `Mise en avant — ${p.bien_titre || "annonce #" + p.bien_id}`}</td>
+              <td>${p.type === "inscription" ? `Inscription · ${LIBELLES_FORFAIT[p.montant] || p.montant + " FCFA"}` : `Mise en avant — ${p.bien_titre || "annonce #" + p.bien_id}`}</td>
               <td>${formaterPrix(p.montant)}</td>
               <td>${LIBELLES_MOYEN[p.moyen_paiement] || p.moyen_paiement || "—"}</td>
               <td><code>${p.transaction_id || "—"}</code></td>
