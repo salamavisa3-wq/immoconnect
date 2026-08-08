@@ -91,6 +91,7 @@ app.get("/sitemap.xml", async (req, res) => {
       { loc: "https://sakeurimmo.com/annonces.html", lastmod: aujourdHui, prio: "0.9" },
       { loc: "https://sakeurimmo.com/guides.html", lastmod: aujourdHui, prio: "0.8" },
       { loc: "https://sakeurimmo.com/diaspora.html", lastmod: aujourdHui, prio: "0.8" },
+      { loc: "https://sakeurimmo.com/contact.html", lastmod: aujourdHui, prio: "0.8" },
       ...categories,
       ...villes,
       { loc: "https://sakeurimmo.com/guides/acheter-un-terrain-au-senegal.html", lastmod: aujourdHui, prio: "0.8" },
