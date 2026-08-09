@@ -4,6 +4,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 const rateLimit = require("express-rate-limit");
 
 const db = require("./db");
@@ -22,6 +23,71 @@ function slugifier(titre) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 60);
+}
+
+// Libellés des types (miroir de frontend/js/api.js — évite le doublon « à vendre à vendre »)
+const LIBELLES_TYPE = {
+  terrain: "Terrain",
+  appartement_vente: "Appartement à vendre",
+  appartement_location: "Appartement à louer",
+  appartement_meuble: "Appartement meublé",
+  maison_vente: "Maison à vendre",
+  maison_location: "Maison à louer",
+  villa_vente: "Villa à vendre",
+  villa_location: "Villa à louer",
+};
+
+const formaterPrix = (montant) => Number(montant).toLocaleString("fr-FR") + " FCFA";
+const urlAnnonce = (b) => `/annonce/${slugifier(b.titre) || "annonce"}-${b.id}`;
+
+// Échappement HTML minimal pour les valeurs injectées côté serveur
+function echapper(texte) {
+  return String(texte ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Template de la fiche annonce, lu une seule fois au démarrage
+const templateAnnonce = fs.readFileSync(path.join(__dirname, "..", "frontend", "annonce.html"), "utf8");
+
+// Rendu serveur de la fiche : SEO (title/desc/canonical/og/twitter) + contenu statique de
+// repli, identiques à ceux que le JS client poserait. Sans JS, Google voit une page complète
+// et auto-canonique au lieu d'un doublon de /annonce.html.
+function rendreFicheAnnonce(b) {
+  const typeTxt = LIBELLES_TYPE[b.type_bien] || b.type_bien;
+  const transactionTxt = b.transaction_type === "vente" ? "à vendre" : "à louer";
+  const villeTxt = b.ville ? ` à ${b.ville}` : "";
+  const titreType = /à vendre|à louer/.test(typeTxt) ? typeTxt : `${typeTxt} ${transactionTxt}`;
+  const titreSeo = `${titreType}${villeTxt} · ${formaterPrix(b.prix)} — SakeurImmo`;
+  const descSeo = b.description
+    ? b.description.slice(0, 155).replace(/\n/g, " ") + "..."
+    : `Consultez cette annonce de ${titreType}${villeTxt} sur SakeurImmo.`;
+  const canonicalUrl = `https://sakeurimmo.com${urlAnnonce(b)}`;
+  const image = b.images && b.images[0] ? b.images[0] : "https://sakeurimmo.com/images/og-image.jpg";
+
+  const contenu = `
+    <div class="cachet-ref" style="margin-bottom:10px;">RÉF. TF-${String(b.id).padStart(6, "0")}</div>
+    <h1>${echapper(b.titre)}</h1>
+    <p style="color:var(--texte-clair);margin-top:-6px;">${echapper(b.quartier ? b.quartier + ", " : "")}${echapper(b.ville)}</p>
+    <p style="font-size:1.6rem;font-weight:700;margin:12px 0;">${formaterPrix(b.prix)}</p>
+    ${b.images && b.images[0] ? `<img src="${echapper(image)}" alt="${echapper(b.titre)}" style="max-width:100%;border-radius:6px;">` : ""}
+    <p style="margin-top:14px;">${echapper(b.description || "")}</p>`;
+
+  return templateAnnonce
+    .replace(/<title>[^<]*<\/title>/, `<title>${echapper(titreSeo)}</title>`)
+    .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${echapper(descSeo)}$2`)
+    .replace(/(<link rel="canonical" id="canonical-bien" href=")[^"]*(">)/, `$1${canonicalUrl}$2`)
+    .replace(/(<meta property="og:url" id="og-url-bien" content=")[^"]*(">)/, `$1${canonicalUrl}$2`)
+    .replace(/(<meta property="og:title" content=")[^"]*(">)/, `$1${echapper(titreSeo)}$2`)
+    .replace(/(<meta property="og:description" content=")[^"]*(">)/, `$1${echapper(descSeo)}$2`)
+    .replace(/(<meta property="og:image" content=")[^"]*(">)/, `$1${image}$2`)
+    .replace(/(<meta name="twitter:title" content=")[^"]*(">)/, `$1${echapper(titreSeo)}$2`)
+    .replace(/(<meta name="twitter:description" content=")[^"]*(">)/, `$1${echapper(descSeo)}$2`)
+    .replace(/(<meta name="twitter:image" content=")[^"]*(">)/, `$1${image}$2`)
+    .replace(/\n    Chargement...\n/, `\n${contenu}\n`);
 }
 
 // Render (et la plupart des hébergeurs Node) placent l'app derrière un proxy inverse ;
@@ -125,9 +191,21 @@ app.use("/api/payments", paymentsRoutes);
 app.use("/api/biens", biensRoutes);
 app.use("/api/contacts", contactsRoutes);
 
-// Fiches annonces à URLs à slugs (SEO) : /annonce/<slug>-<id> sert la même page annonce.html
-app.get("/annonce/:slugId", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "frontend", "annonce.html"));
+// Fiches annonces à URLs à slugs (SEO) : /annonce/<slug>-<id> est rendu côté serveur
+// (SEO + contenu), sinon Google classait le shell statique comme doublon de /annonce.html.
+app.get("/annonce/:slugId", async (req, res) => {
+  try {
+    const id = Number((req.params.slugId.replace(/\.html$/, "").match(/(\d+)$/) || [])[1]);
+    if (!id) return res.status(404).sendFile(path.join(__dirname, "..", "frontend", "404.html"));
+    const b = await db.get("SELECT * FROM biens WHERE id = ? AND statut = 'publie'", [id]);
+    if (!b) return res.status(404).sendFile(path.join(__dirname, "..", "frontend", "404.html"));
+    b.images = JSON.parse(b.images || "[]");
+    res.set("Cache-Control", "public, max-age=300");
+    res.send(rendreFicheAnnonce(b));
+  } catch (e) {
+    console.error("Erreur fiche annonce :", e);
+    res.status(500).send("Erreur serveur.");
+  }
 });
 
 app.use((req, res) => {
