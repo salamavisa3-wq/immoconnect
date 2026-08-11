@@ -53,6 +53,54 @@ function echapper(texte) {
 // Template de la fiche annonce, lu une seule fois au démarrage
 const templateAnnonce = fs.readFileSync(path.join(__dirname, "..", "frontend", "annonce.html"), "utf8");
 
+// Construit le JSON-LD RealEstateListing pour une fiche
+function jsonLdRealEstateListing(b, canonicalUrl) {
+  const images = (b.images || [])
+    .filter(Boolean)
+    .map((img) => (img.startsWith("http") ? img : `https://sakeurimmo.com${img}`));
+  const image = images[0] || "https://sakeurimmo.com/images/og-image.jpg";
+  const data = {
+    "@context": "https://schema.org",
+    "@type": "RealEstateListing",
+    "@id": `${canonicalUrl}#listing`,
+    url: canonicalUrl,
+    name: b.titre,
+    description: b.description ? b.description.slice(0, 300).replace(/\n/g, " ") : `Annonce immobilière au Sénégal sur SakeurImmo.`,
+    datePosted: String(b.cree_le || "").slice(0, 10),
+    image: images.length ? images : [image],
+    about: {
+      "@type": "Place",
+      name: b.ville || "Sénégal",
+      address: {
+        "@type": "PostalAddress",
+        addressCountry: "SN",
+        ...(b.ville ? { addressLocality: b.ville } : {}),
+        ...(b.quartier ? { streetAddress: b.quartier } : {}),
+      },
+    },
+    offers: {
+      "@type": "Offer",
+      price: String(Number(b.prix) || 0),
+      priceCurrency: "XOF",
+      availability: "https://schema.org/InStock",
+      url: canonicalUrl,
+      seller: {
+        "@type": "RealEstateAgent",
+        name: "SakeurImmo",
+        url: "https://sakeurimmo.com",
+      },
+    },
+  };
+  if (b.superficie) {
+    data.about.floorSize = {
+      "@type": "QuantitativeValue",
+      value: Number(b.superficie),
+      unitCode: "MTK",
+    };
+  }
+  return JSON.stringify(data, null, 2);
+}
+
 // Rendu serveur de la fiche : SEO (title/desc/canonical/og/twitter) + contenu statique de
 // repli, identiques à ceux que le JS client poserait. Sans JS, Google voit une page complète
 // et auto-canonique au lieu d'un doublon de /annonce.html.
@@ -66,15 +114,53 @@ function rendreFicheAnnonce(b) {
     ? b.description.slice(0, 155).replace(/\n/g, " ") + "..."
     : `Consultez cette annonce de ${titreType}${villeTxt} sur SakeurImmo.`;
   const canonicalUrl = `https://sakeurimmo.com${urlAnnonce(b)}`;
-  const image = b.images && b.images[0] ? b.images[0] : "https://sakeurimmo.com/images/og-image.jpg";
+  const images = (b.images || []).filter(Boolean);
+  const image = images[0] ? (images[0].startsWith("http") ? images[0] : `https://sakeurimmo.com${images[0]}`) : "https://sakeurimmo.com/images/og-image.jpg";
+  const altText = `${echapper(b.titre)} — ${echapper(b.quartier ? b.quartier + ", " : "")}${echapper(b.ville)}`;
+  const jsonLd = jsonLdRealEstateListing(b, canonicalUrl);
+
+  const imagesHtml = images
+    .map((img) => {
+      const src = img.startsWith("http") ? img : `https://sakeurimmo.com${img}`;
+      return `<img src="${echapper(src)}" alt="${altText}" style="width:220px;height:150px;object-fit:cover;border-radius:6px;border:1px solid var(--sable-fonce);">`;
+    })
+    .join("");
 
   const contenu = `
     <div class="cachet-ref" style="margin-bottom:10px;">RÉF. TF-${String(b.id).padStart(6, "0")}</div>
     <h1>${echapper(b.titre)}</h1>
     <p style="color:var(--texte-clair);margin-top:-6px;">${echapper(b.quartier ? b.quartier + ", " : "")}${echapper(b.ville)}</p>
     <p style="font-size:1.6rem;font-weight:700;margin:12px 0;">${formaterPrix(b.prix)}</p>
-    ${b.images && b.images[0] ? `<img src="${echapper(image)}" alt="${echapper(b.titre)}" style="max-width:100%;border-radius:6px;">` : ""}
-    <p style="margin-top:14px;">${echapper(b.description || "")}</p>`;
+    ${image ? `<img src="${echapper(image)}" alt="${altText}" style="max-width:100%;border-radius:6px;">` : ""}
+    <p style="margin-top:14px;">${echapper(b.description || "")}</p>
+    <h3>Description complète</h3>
+    <div style="color:var(--texte);line-height:1.7;">${echapper(b.description || "Aucune description fournie.").replace(/\n/g, "<br>")}</div>
+    <div style="margin-top:32px;background:var(--blanc);border:1px solid var(--sable-fonce);border-radius:8px;padding:30px;">
+      <h3 style="margin-top:0;">Contacter le propriétaire</h3>
+      <div id="msg-contact-erreur"></div>
+      <div id="msg-contact-succes"></div>
+      <form id="form-contact" style="display:grid;gap:14px;">
+        <div class="grille-2" style="gap:14px;">
+          <div class="champ" style="margin:0;">
+            <label>Votre nom *</label>
+            <input type="text" name="nom" required placeholder="Prénom et nom">
+          </div>
+          <div class="champ" style="margin:0;">
+            <label>Votre e-mail *</label>
+            <input type="email" name="email" required placeholder="vous@exemple.com">
+          </div>
+        </div>
+        <div class="champ" style="margin:0;">
+          <label>Téléphone (optionnel)</label>
+          <input type="text" name="telephone" placeholder="+221 77 000 00 00">
+        </div>
+        <div class="champ" style="margin:0;">
+          <label>Votre message *</label>
+          <textarea name="message" rows="4" required placeholder="Bonjour, je suis intéressé(e) par ce bien..."></textarea>
+        </div>
+        <button type="submit" class="bouton bouton-primaire" id="btn-envoyer-message">Envoyer le message</button>
+      </form>
+    </div>`;
 
   return templateAnnonce
     .replace(/<title>[^<]*<\/title>/, `<title>${echapper(titreSeo)}</title>`)
@@ -87,6 +173,7 @@ function rendreFicheAnnonce(b) {
     .replace(/(<meta name="twitter:title" content=")[^"]*(">)/, `$1${echapper(titreSeo)}$2`)
     .replace(/(<meta name="twitter:description" content=")[^"]*(">)/, `$1${echapper(descSeo)}$2`)
     .replace(/(<meta name="twitter:image" content=")[^"]*(">)/, `$1${image}$2`)
+    .replace(/<\/head>/, `  <script type="application/ld+json">${jsonLd}</script>\n</head>`)
     .replace(/\n    Chargement...\n/, `\n${contenu}\n`);
 }
 
