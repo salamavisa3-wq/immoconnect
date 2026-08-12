@@ -67,19 +67,19 @@
       <p class="hero-note">Paiement par QR — Orange Money ou Wave.</p>
     </div>
 
-    <div class="cachet-carte">
+    <div class="cachet-carte" id="cachet-carte">
       <div class="cachet-entete">
         <div>
-          <div class="cachet-ref">RÉF. TF-000482</div>
-          <h4 style="margin:6px 0 0;">Villa avec piscine — Saly</h4>
+          <div class="cachet-ref">Dernière annonce</div>
+          <h4 style="margin:6px 0 0;">Chargement…</h4>
         </div>
-        <div class="sceau">VILLA</div>
+        <div class="sceau">IMMO</div>
       </div>
-      <div class="prix">85 000 000 FCFA</div>
+      <div class="prix">—</div>
       <ul class="cachet-liste">
-        <li><span>Superficie</span><span>420 m²</span></li>
-        <li><span>Chambres</span><span>5</span></li>
-        <li><span>Transaction</span><span>Vente</span></li>
+        <li><span>Superficie</span><span>—</span></li>
+        <li><span>Chambres</span><span>—</span></li>
+        <li><span>Transaction</span><span>—</span></li>
         <li><span>Statut</span><span style="color:var(--vert-baobab)">Publiée</span></li>
       </ul>
     </div>
@@ -235,10 +235,6 @@
         "addressLocality": "Thiès",
         "addressCountry": "SN"
       },
-      "sameAs": [
-        "https://www.immothies-dakar.com",
-        "https://www.srvoyages.com"
-      ],
       "logo": {
         "@type": "ImageObject",
         "url": "https://sakeurimmo.com/images/favicon.svg"
@@ -265,6 +261,45 @@
 }
 </script>
 
+<script src="/js/api.js"></script>
 <script src="/js/menu.js"></script>
+<script>
+// Carte héro : affiche la dernière annonce réellement publiée (jamais de données fictives).
+// Si aucune annonce n'est publiée, la carte garde un état neutre.
+(async function chargerCarteHero() {
+  const carte = document.getElementById("cachet-carte");
+  if (!carte) return;
+  try {
+    const reponse = await fetch(API_BASE + "/biens?limite=1");
+    const data = await reponse.json();
+    const bien = data && data.resultats && data.resultats[0];
+    if (!bien) return; // aucune annonce publiée → état neutre conservé
+    const typeTxt = LIBELLES_TYPE[bien.type_bien] || bien.type_bien;
+    const transactionTxt = bien.transaction_type === "vente" ? "Vente" : "Location";
+    const ref = "RÉF. TF-" + String(bien.id).padStart(6, "0");
+    const sceau = (typeTxt.split(" ")[0] || "IMMO").toUpperCase();
+    const lien = urlAnnonce(bien);
+    carte.innerHTML =
+      '<a href="' + lien + '" style="text-decoration:none;color:inherit;display:block;">' +
+        '<div class="cachet-entete">' +
+          '<div>' +
+            '<div class="cachet-ref">' + ref + '</div>' +
+            '<h4 style="margin:6px 0 0;">' + bien.titre + '</h4>' +
+          '</div>' +
+          '<div class="sceau">' + sceau + '</div>' +
+        '</div>' +
+        '<div class="prix">' + formaterPrix(bien.prix) + '</div>' +
+        '<ul class="cachet-liste">' +
+          (bien.superficie ? '<li><span>Superficie</span><span>' + Number(bien.superficie).toLocaleString("fr-FR") + ' m²</span></li>' : '') +
+          (bien.chambres ? '<li><span>Chambres</span><span>' + bien.chambres + '</span></li>' : '') +
+          '<li><span>Transaction</span><span>' + transactionTxt + '</span></li>' +
+          '<li><span>Statut</span><span style="color:var(--vert-baobab)">Publiée</span></li>' +
+        '</ul>' +
+      '</a>';
+  } catch (e) {
+    // silencieux : la carte garde son état neutre
+  }
+})();
+</script>
 </body>
 </html>
