@@ -50,6 +50,117 @@ function echapper(texte) {
     .replace(/'/g, "&#39;");
 }
 
+// --- SSR des grilles d'annonces (SEO) : miroir de frontend/js/annonces.html + categorie.js ---
+// Injecte le contenu réel des listings (cartes + JSON-LD ItemList) dans le HTML servi,
+// pour que Google voie les annonces en HTML brut au lieu d'un shell « Chargement... ».
+
+const CATEGORIES_SLUG_TYPE = {
+  "terrains-a-vendre": "terrain",
+  "appartements-a-vendre": "appartement_vente",
+  "appartements-a-louer": "appartement_location",
+  "appartements-meubles": "appartement_meuble",
+  "maisons-a-vendre": "maison_vente",
+  "maisons-a-louer": "maison_location",
+  "villas-a-vendre": "villa_vente",
+  "villas-a-louer": "villa_location",
+};
+
+const VILLES_SLUG_NOM = {
+  "immobilier-a-dakar": "Dakar",
+  "immobilier-a-thies": "Thiès",
+  "immobilier-a-saly": "Saly",
+  "immobilier-a-saint-louis": "Saint-Louis",
+  "immobilier-a-touba": "Touba",
+};
+
+// Carte annonce côté serveur (miroir de la fonction JS carteAnnonce)
+function carteAnnonceHtml(b) {
+  const images = Array.isArray(b.images) ? b.images : [];
+  const enAvant =
+    b.mise_en_avant === 1 &&
+    (!b.mise_en_avant_jusqu_au || new Date(b.mise_en_avant_jusqu_au) > new Date());
+  const image = images[0]
+    ? `<img src="${images[0].startsWith("http") ? images[0] : `https://sakeurimmo.com${images[0]}`}" alt="${echapper(b.titre)}" loading="lazy">`
+    : `<span>Pas de photo</span>`;
+  return `
+    <a class="annonce-carte${enAvant ? " annonce-en-avant" : ""}" href="${urlAnnonce(b)}">
+      <div class="annonce-image">
+        <span class="badge-type">${LIBELLES_TYPE[b.type_bien] || b.type_bien}</span>
+        ${enAvant ? '<span class="badge-coup-de-coeur">★ Coup de cœur</span>' : ""}
+        ${image}
+      </div>
+      <div class="annonce-corps">
+        <h4>${echapper(b.titre)}</h4>
+        <div class="annonce-lieu">${b.quartier ? echapper(b.quartier) + ", " : ""}${echapper(b.ville)}</div>
+        <div class="annonce-prix">${formaterPrix(b.prix)}</div>
+        <div class="annonce-carac">
+          ${b.superficie ? `<span>${b.superficie} m²</span>` : ""}
+          ${b.chambres ? `<span>${b.chambres} ch.</span>` : ""}
+          ${b.salles_bain ? `<span>${b.salles_bain} SDB</span>` : ""}
+        </div>
+      </div>
+    </a>`;
+}
+
+// Biens publiés filtrés (miroir serveur de GET /api/biens)
+async function listerBiensPublies({ type, ville } = {}) {
+  const conditions = ["statut = 'publie'"];
+  const params = [];
+  if (type) {
+    conditions.push("type_bien = ?");
+    params.push(type);
+  }
+  if (ville) {
+    conditions.push("ville LIKE ?");
+    params.push(`%${ville}%`);
+  }
+  const where = conditions.join(" AND ");
+  const biens = await db.all(
+    `SELECT * FROM biens WHERE ${where}
+     ORDER BY
+       CASE WHEN mise_en_avant = 1
+                 AND (mise_en_avant_jusqu_au IS NULL OR mise_en_avant_jusqu_au > datetime('now'))
+            THEN 1 ELSE 0 END DESC,
+       cree_le DESC
+     LIMIT 100`,
+    params
+  );
+  // images est stocké en JSON dans la base → on le parse (miroir de GET /api/biens)
+  return biens.map((b) => ({ ...b, images: JSON.parse(b.images || "[]") }));
+}
+
+// JSON-LD ItemList des annonces (miroir de injecterSchemaItemList côté client)
+function jsonLdItemList(biens, canonicalUrl) {
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "@id": `${canonicalUrl}#listing`,
+    "itemListElement": biens.map((b, i) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "url": `https://sakeurimmo.com${urlAnnonce(b)}`,
+      "name": b.titre,
+    })),
+  });
+}
+
+// Injecte la grille (cartes ou état vide) + ItemList JSON-LD dans un template de listing.
+// Le placeholder « Chargement des annonces... » existe dans le HTML de annonces.html,
+// des 8 catégories et des 5 villes : un seul remplacement (non-global) le couvre tous.
+// La 2e occurrence (celle du script client) n'est pas touchée — le JS re-rend la même grille.
+function rendreGrilleTemplate(templateHtml, biens, canonicalUrl) {
+  const grilleHtml = biens.length
+    ? biens.map(carteAnnonceHtml).join("\n")
+    : `<p style="color:var(--texte-clair);">Aucune annonce ne correspond pour le moment. Sur SakeurImmo, les propriétaires publient leurs biens directement — soyez le premier à publier le vôtre, dès 5000 FCFA.</p>
+<p style="margin-top:18px;"><a href="/inscription.html" class="bouton bouton-primaire">Publier une annonce</a></p>`;
+  const html = templateHtml.replace(/<p>Chargement des annonces\.\.\.<\/p>/, grilleHtml);
+  if (biens.length) {
+    // data-ssr-itemlist : signal au JS client pour ne pas injecter un 2e ItemList en doublon
+    return html.replace("</head>", `<script type="application/ld+json" data-ssr-itemlist>${jsonLdItemList(biens, canonicalUrl)}</script>\n</head>`);
+  }
+  return html;
+}
+
 // Template de la fiche annonce, lu une seule fois au démarrage
 const templateAnnonce = fs.readFileSync(path.join(__dirname, "..", "frontend", "annonce.html"), "utf8");
 
@@ -193,6 +304,60 @@ process.on("unhandledRejection", (err) => {
 app.use("/api/", cors({ origin: process.env.FRONTEND_URL || "*" }));
 app.use(express.json({ limit: "10mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+// --- SSR des grilles d'annonces (SEO) : AVANT le statique, pour intercepter les URLs de listing ---
+// /annonces.html (vue par défaut), /categorie/<slug>.html, /villes/<slug>.html
+// sont rendus côté serveur : Google voit les annonces en HTML brut + ItemList JSON-LD.
+app.get("/annonces.html", async (req, res) => {
+  try {
+    if (Object.keys(req.query).length) {
+      // Vue filtrée (?ville=, ?type=...) : on laisse le shell au JS client (comportement d'origine)
+      return res.sendFile(path.join(__dirname, "..", "frontend", "annonces.html"));
+    }
+    const biens = await listerBiensPublies();
+    const template = fs.readFileSync(path.join(__dirname, "..", "frontend", "annonces.html"), "utf8");
+    res.set("Cache-Control", "public, max-age=300");
+    res.send(rendreGrilleTemplate(template, biens, "https://sakeurimmo.com/annonces.html"));
+  } catch (e) {
+    console.error("Erreur SSR annonces.html :", e);
+    res.status(500).send("Erreur serveur.");
+  }
+});
+
+app.get("/categorie/:slug.html", async (req, res) => {
+  const type = CATEGORIES_SLUG_TYPE[req.params.slug];
+  if (!type) {
+    return res.sendFile(path.join(__dirname, "..", "frontend", "categorie", `${req.params.slug}.html`));
+  }
+  try {
+    const biens = await listerBiensPublies({ type });
+    const chemin = path.join(__dirname, "..", "frontend", "categorie", `${req.params.slug}.html`);
+    const template = fs.readFileSync(chemin, "utf8");
+    res.set("Cache-Control", "public, max-age=300");
+    res.send(rendreGrilleTemplate(template, biens, `https://sakeurimmo.com/categorie/${req.params.slug}.html`));
+  } catch (e) {
+    console.error(`Erreur SSR categorie/${req.params.slug} :`, e);
+    res.status(500).send("Erreur serveur.");
+  }
+});
+
+app.get("/villes/:slug.html", async (req, res) => {
+  const ville = VILLES_SLUG_NOM[req.params.slug];
+  if (!ville) {
+    return res.sendFile(path.join(__dirname, "..", "frontend", "villes", `${req.params.slug}.html`));
+  }
+  try {
+    const biens = await listerBiensPublies({ ville });
+    const chemin = path.join(__dirname, "..", "frontend", "villes", `${req.params.slug}.html`);
+    const template = fs.readFileSync(chemin, "utf8");
+    res.set("Cache-Control", "public, max-age=300");
+    res.send(rendreGrilleTemplate(template, biens, `https://sakeurimmo.com/villes/${req.params.slug}.html`));
+  } catch (e) {
+    console.error(`Erreur SSR villes/${req.params.slug} :`, e);
+    res.status(500).send("Erreur serveur.");
+  }
+});
+
 // Cache CDN : HTML court (5 min), assets statiques long (24h) — max-age=0 par défaut ne met rien en cache au edge
 app.use(express.static(path.join(__dirname, "..", "frontend"), {
   maxAge: "1h",

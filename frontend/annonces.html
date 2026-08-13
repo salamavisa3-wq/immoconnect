@@ -136,6 +136,8 @@ async function chargerAnnonces(params = {}) {
 }
 
 function injecterSchemaItemList(annonces) {
+  // Le serveur injecte déjà l'ItemList (data-ssr-itemlist) sur la vue par défaut → ne pas dupliquer
+  if (document.querySelector("script[data-ssr-itemlist]")) return;
   const element = document.createElement("script");
   element.type = "application/ld+json";
   element.textContent = JSON.stringify({
