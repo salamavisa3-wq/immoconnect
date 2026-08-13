@@ -404,14 +404,29 @@ app.get("/sitemap.xml", async (req, res) => {
       lastmod: aujourdHui,
       prio: "0.8",
     }));
+    const blog = [
+      "terrain-a-vendre-pognene-thies",
+      "terrain-a-vendre-zac-thies",
+      "terrain-a-vendre-diakhaw-thies",
+      "villa-a-vendre-thies-piscine",
+      "maison-a-vendre-mboro",
+      "terrain-agricole-a-vendre-kedougou",
+      "immeuble-de-rapport-a-vendre-thies",
+    ].map((slug) => ({
+      loc: `https://sakeurimmo.com/blog/${slug}.html`,
+      lastmod: aujourdHui,
+      prio: "0.7",
+    }));
     const pages = [
       { loc: "https://sakeurimmo.com/", lastmod: aujourdHui, prio: "1.0" },
       { loc: "https://sakeurimmo.com/annonces.html", lastmod: aujourdHui, prio: "0.9" },
       { loc: "https://sakeurimmo.com/guides.html", lastmod: aujourdHui, prio: "0.8" },
+      { loc: "https://sakeurimmo.com/blog.html", lastmod: aujourdHui, prio: "0.8" },
       { loc: "https://sakeurimmo.com/diaspora.html", lastmod: aujourdHui, prio: "0.8" },
       { loc: "https://sakeurimmo.com/contact.html", lastmod: aujourdHui, prio: "0.8" },
       ...categories,
       ...villes,
+      ...blog,
       { loc: "https://sakeurimmo.com/guides/acheter-un-terrain-au-senegal.html", lastmod: aujourdHui, prio: "0.8" },
       { loc: "https://sakeurimmo.com/guides/vendre-son-bien-au-senegal.html", lastmod: aujourdHui, prio: "0.8" },
       { loc: "https://sakeurimmo.com/guides/quartiers-investir-dakar-thies.html", lastmod: aujourdHui, prio: "0.8" },
