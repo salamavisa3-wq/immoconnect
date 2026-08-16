@@ -19,10 +19,14 @@ const db = require("../db");
 const { FORFAITS } = require("../forfaits");
 const { authRequis, adminRequis } = require("../middleware/auth");
 const { envoyerEmailAdmin, echapper } = require("../mail");
+const paypal = require("../paypal");
 
 const router = express.Router();
 
 const MONTANT_MISE_EN_AVANT  = Number(process.env.FRAIS_MISE_EN_AVANT_FCFA  || 2000);
+
+// PayPal est disponible seulement si les clés API sont renseignées (sandbox ou live).
+const paypalConfigure = () => Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
 
 // Paiement par QR : unique méthode de paiement. Aucune confirmation automatique
 // n'est possible (un QR statique ne porte ni montant ni référence de commande),
@@ -49,6 +53,26 @@ router.get("/forfaits", (req, res) => {
   res.json({ forfaits: FORFAITS });
 });
 
+// GET /api/payments/config — moyens de paiement disponibles (public, page d'inscription).
+// Le frontend masque le choix PayPal si les clés ne sont pas configurées.
+router.get("/config", (req, res) => {
+  res.json({ paypal: paypalConfigure() });
+});
+
+// Démarre un paiement PayPal : crée une ligne 'initie' fraîche (jamais de réutilisation —
+// un ordre PayPal est lié à un montant précis) puis une commande PayPal, et stocke
+// l'order_id dans provider_ref pour vérifier la propriété à la capture.
+async function initierPayPal({ userId, bienId, reference, montant, type, description }) {
+  await db.run(
+    `INSERT INTO paiements (user_id, bien_id, reference, montant, type, statut)
+     VALUES (?, ?, ?, ?, ?, 'initie')`,
+    [userId, bienId, reference, montant, type]
+  );
+  const p = await paypal.createPayment({ reference, montant, description });
+  await db.run("UPDATE paiements SET provider_ref = ? WHERE reference = ?", [p.order_id, reference]);
+  return { mode: "paypal", reference, montant, redirect_url: p.redirect_url, order_id: p.order_id };
+}
+
 // POST /api/payments/initier — démarre le paiement d'un forfait (inscription ou ajout de places)
 router.post("/initier", authRequis, async (req, res) => {
   const forfait = FORFAITS[Number(req.body.forfait)];
@@ -56,12 +80,39 @@ router.post("/initier", authRequis, async (req, res) => {
     return res.status(400).json({ erreur: "Choisissez un forfait (5 000, 10 000 ou 15 000 FCFA)." });
   }
 
+  const moyen = req.body.moyen === "paypal" ? "paypal" : "qr";
+
+  // PayPal : toujours une ligne fraîche (jamais de réutilisation). Un ordre PayPal est
+  // lié à un montant précis : réutiliser une ligne 'initie' et re-synchroniser son montant
+  // laisserait l'ordre PayPal à l'ancien montant → mauvais crédit de places à la capture.
+  if (moyen === "paypal") {
+    if (!paypalConfigure()) {
+      return res.status(400).json({ erreur: "Le paiement PayPal n'est pas configuré." });
+    }
+    const reference = `INS-${req.user.id}-${uuidv4().slice(0, 8)}`;
+    try {
+      const data = await initierPayPal({
+        userId: req.user.id,
+        bienId: null,
+        reference,
+        montant: forfait.prix,
+        type: "inscription",
+        description: `SakeurImmo — forfait ${forfait.annonces} annonces`,
+      });
+      return res.json({ ...data, annonces: forfait.annonces });
+    } catch (e) {
+      console.error("Erreur création commande PayPal :", e);
+      return res.status(502).json({ erreur: "Le paiement PayPal est momentanément indisponible. Réessayez dans quelques instants." });
+    }
+  }
+
   // Réutiliser un paiement déjà initié pour éviter les doublons. Seuls les paiements
-  // encore au stade 'initie' sont réutilisables : un paiement 'en_verification' a déjà
-  // été payé/déclaré pour son propre montant — un achat de places supplémentaire doit
-  // créer une nouvelle référence (sinon le crédit utiliserait le mauvais montant).
+  // encore au stade 'initie' ET sans provider_ref (donc jamais PayPal) sont réutilisables :
+  // un paiement 'en_verification' a déjà été payé/déclaré pour son propre montant — un
+  // achat de places supplémentaire doit créer une nouvelle référence (sinon le crédit
+  // utiliserait le mauvais montant).
   const existant = await db.get(
-    "SELECT * FROM paiements WHERE user_id = ? AND type = 'inscription' AND statut = 'initie' ORDER BY id DESC LIMIT 1",
+    "SELECT * FROM paiements WHERE user_id = ? AND type = 'inscription' AND statut = 'initie' AND provider_ref IS NULL ORDER BY id DESC LIMIT 1",
     [req.user.id]
   );
 
@@ -78,8 +129,7 @@ router.post("/initier", authRequis, async (req, res) => {
     await db.run("UPDATE paiements SET montant = ? WHERE reference = ?", [forfait.prix, reference]);
   }
 
-  // Paiement unique : QR Wave / Orange Money, circuit manuel. Le body n'est lu que
-  // pour le choix du forfait (rétrocompat : les anciens clients peuvent envoyer { moyen: "qr" }).
+  // Paiement par QR : Wave / Orange Money, circuit manuel.
   res.json({
     mode: "qr",
     reference,
@@ -145,20 +195,87 @@ router.post("/initier-mise-en-avant/:bien_id", authRequis, async (req, res) => {
   }
 
   const reference = `MEA-${bienId}-${uuidv4().slice(0, 8)}`;
+
+  // PayPal : même helper que pour les forfaits (le frontend reste en QR pour la mise en
+  // avant, mais l'API est prête). QR : comportement historique.
+  if (req.body.moyen === "paypal") {
+    if (!paypalConfigure()) {
+      return res.status(400).json({ erreur: "Le paiement PayPal n'est pas configuré." });
+    }
+    try {
+      const data = await initierPayPal({
+        userId: req.user.id,
+        bienId,
+        reference,
+        montant: MONTANT_MISE_EN_AVANT,
+        type: "mise_en_avant",
+        description: `SakeurImmo — mise en avant de l'annonce #${bienId} (7 jours)`,
+      });
+      return res.json(data);
+    } catch (e) {
+      console.error("Erreur création commande PayPal (mise en avant) :", e);
+      return res.status(502).json({ erreur: "Le paiement PayPal est momentanément indisponible. Réessayez dans quelques instants." });
+    }
+  }
+
   await db.run(
     `INSERT INTO paiements (user_id, bien_id, reference, montant, type, statut)
      VALUES (?, ?, ?, ?, 'mise_en_avant', 'initie')`,
     [req.user.id, bienId, reference, MONTANT_MISE_EN_AVANT]
   );
 
-  // Paiement unique : QR Wave / Orange Money, circuit manuel. Le body est ignoré
-  // (rétrocompat : les anciens clients peuvent encore envoyer { moyen: "qr" }).
+  // Paiement par QR : Wave / Orange Money, circuit manuel.
   res.json({
     mode: "qr",
     reference,
     montant: MONTANT_MISE_EN_AVANT,
     url_paiement: `/paiement-qr.html?reference=${encodeURIComponent(reference)}`,
   });
+});
+
+// POST /api/payments/paypal-capture — confirme un paiement PayPal au retour de la page
+// /paiement-paypal.html. PayPal est l'autorité : la capture réussie = fonds reçus, le
+// paiement passe directement à 'reussi' (aucune vérification admin, contrairement au QR).
+router.post("/paypal-capture", authRequis, async (req, res) => {
+  const orderId = String(req.body.order_id || "").trim();
+  if (!orderId) return res.status(400).json({ erreur: "order_id manquant." });
+
+  // Fast-path : déjà confirmé (refresh de la page de retour) — on ne rappelle pas PayPal.
+  let paiement = await db.get(
+    "SELECT * FROM paiements WHERE provider_ref = ? ORDER BY id DESC LIMIT 1",
+    [orderId]
+  );
+  if (paiement && paiement.statut === "reussi") {
+    return res.json({ statut: "reussi", reference: paiement.reference, type: paiement.type });
+  }
+
+  let cap;
+  try {
+    cap = await paypal.capture({ order_id: orderId });
+  } catch (e) {
+    console.error("Erreur capture PayPal :", e);
+    return res.status(502).json({ erreur: "Le paiement PayPal est momentanément indisponible. Réessayez dans quelques instants." });
+  }
+  if (!cap.paid) {
+    return res.status(400).json({ erreur: "Le paiement PayPal n'est pas confirmé." });
+  }
+
+  // Lier la commande capturée à notre paiement via le reference_id passé à la création.
+  if (!paiement) {
+    paiement = await db.get("SELECT * FROM paiements WHERE reference = ?", [cap.reference]);
+  }
+  if (!paiement) return res.status(404).json({ erreur: "Paiement introuvable." });
+  if (paiement.user_id !== req.user.id) {
+    return res.status(403).json({ erreur: "Ce paiement ne vous appartient pas." });
+  }
+  if (paiement.provider_ref !== orderId) {
+    return res.status(400).json({ erreur: "Commande PayPal inconnue pour ce paiement." });
+  }
+
+  // confirmerPaiement est idempotent ; crediterInscription ne crédite qu'une fois
+  // (places_creditees). Les paiements PayPal n'apparaissent jamais dans la file admin.
+  await confirmerPaiement(paiement.reference, "paypal");
+  res.json({ statut: "reussi", reference: paiement.reference, type: paiement.type });
 });
 
 // --- Paiement par QR (Wave / Orange Money) ---

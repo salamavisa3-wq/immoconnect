@@ -71,7 +71,7 @@
 
 <div class="carte-formulaire" id="carte-etape-2" style="display:none;">
   <h2 class="mt-0" id="titre-etape-2">Choisissez votre forfait</h2>
-  <p class="aide" style="margin-bottom:22px;" id="sous-titre-etape-2">Étape 2/2 — Paiement par QR : compte activé automatiquement après paiement. Chaque forfait donne droit à un nombre d'annonces actives.</p>
+  <p class="aide" style="margin-bottom:22px;" id="sous-titre-etape-2">Étape 2/2 — Paiement par QR (Wave / Orange Money) ou PayPal : compte activé automatiquement après paiement. Chaque forfait donne droit à un nombre d'annonces actives.</p>
 
   <div id="zone-erreur-2"></div>
 
@@ -79,8 +79,19 @@
     <p class="aide centre" style="grid-column:1/-1;">Chargement des forfaits...</p>
   </div>
 
+  <div id="bloc-moyen" style="margin-bottom:18px;">
+    <p class="aide" style="margin-bottom:8px;"><strong>Moyen de paiement</strong></p>
+    <label style="display:block;margin:6px 0;cursor:pointer;">
+      <input type="radio" name="moyen" value="qr" checked> Wave / Orange Money (QR)
+    </label>
+    <label id="label-paypal" style="display:block;margin:6px 0;cursor:pointer;">
+      <input type="radio" name="moyen" value="paypal"> PayPal (carte ou compte PayPal)
+    </label>
+    <p class="aide" id="equivalence-eur" style="display:none;margin-top:8px;color:var(--terre);"></p>
+  </div>
+
   <button id="btn-payer" class="bouton bouton-primaire bouton-plein-largeur" disabled>Choisissez un forfait ci-dessus</button>
-  <p class="aide centre" style="margin-top:14px;">Vous scannez un QR Wave ou Orange Money, puis vous déclarez votre paiement. Votre compte est activé et vos places sont créditées automatiquement.</p>
+  <p class="aide centre" style="margin-top:14px;">Votre compte est activé et vos places sont créditées automatiquement après le paiement (QR Wave / Orange Money ou PayPal).</p>
 </div>
 
 <script src="js/api.js"></script>
@@ -90,8 +101,31 @@ const carte1 = document.getElementById("carte-etape-1");
 const carte2 = document.getElementById("carte-etape-2");
 const grille = document.getElementById("grille-forfaits");
 const btnPayer = document.getElementById("btn-payer");
+const labelPaypal = document.getElementById("label-paypal");
+const equivalenceEur = document.getElementById("equivalence-eur");
 let forfaits = [];
 let indexChoisi = null;
+let moyenChoisi = "qr";
+
+const XOF_PER_EUR = 655.957;
+
+// Met à jour le libellé du bouton et l'équivalence en euros selon le forfait et le moyen choisis.
+function majBoutonPayer() {
+  if (indexChoisi === null) {
+    btnPayer.textContent = "Choisissez un forfait ci-dessus";
+    equivalenceEur.style.display = "none";
+    return;
+  }
+  const f = forfaits[indexChoisi];
+  const libelleMoyen = moyenChoisi === "paypal" ? "PayPal" : "Wave / Orange Money";
+  btnPayer.textContent = `Payer ${formaterPrixFr(f.prix)} — ${libelleMoyen}`;
+  if (moyenChoisi === "paypal") {
+    equivalenceEur.textContent = `≈ ${(f.prix / XOF_PER_EUR).toFixed(2).replace(".", ",")} € (PayPal facture en euros)`;
+    equivalenceEur.style.display = "block";
+  } else {
+    equivalenceEur.style.display = "none";
+  }
+}
 
 function afficherErreur(msg) {
   zoneErreur.innerHTML = `<div class="message-erreur">${msg}</div>`;
@@ -121,12 +155,23 @@ async function chargerForfaits() {
         grille.querySelectorAll(".carte-forfait").forEach((c) => c.classList.remove("selectionne"));
         carte.classList.add("selectionne");
         indexChoisi = Number(carte.dataset.index);
-        const f = forfaits[indexChoisi];
         btnPayer.disabled = false;
-        btnPayer.textContent = `Payer ${formaterPrixFr(f.prix)} — Wave / Orange Money`;
+        majBoutonPayer();
       };
       carte.addEventListener("click", selectionner);
       carte.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectionner(); } });
+    });
+
+    // Moyen de paiement : masquer PayPal si les clés ne sont pas configurées côté serveur.
+    try {
+      const config = await appelApi("/payments/config");
+      if (!config.paypal) labelPaypal.style.display = "none";
+    } catch (_) {}
+    document.querySelectorAll('input[name="moyen"]').forEach((radio) => {
+      radio.addEventListener("change", () => {
+        moyenChoisi = document.querySelector('input[name="moyen"]:checked').value;
+        majBoutonPayer();
+      });
     });
   } catch (err) {
     grille.innerHTML = `<p class="aide centre" style="grid-column:1/-1;">${err.message}</p>`;
@@ -139,7 +184,7 @@ if (Session.estConnecte()) {
   carte2.style.display = "block";
   document.getElementById("titre-etape-2").textContent = "Ajouter des places à votre compte";
   document.getElementById("sous-titre-etape-2").textContent =
-    "Choisissez une formule : le paiement crédite les annonces correspondantes sur votre compte, automatiquement après déclaration.";
+    "Choisissez une formule : le paiement (QR Wave / Orange Money ou PayPal) crédite les annonces correspondantes sur votre compte, automatiquement après paiement.";
   chargerForfaits();
 }
 
@@ -166,12 +211,11 @@ btnPayer.addEventListener("click", async () => {
   btnPayer.textContent = "Préparation...";
 
   try {
-    const { url_paiement } = await appelApi("/payments/initier", { method: "POST", body: JSON.stringify({ forfait: indexChoisi }) });
-    window.location.href = url_paiement;
+    const data = await appelApi("/payments/initier", { method: "POST", body: JSON.stringify({ forfait: indexChoisi, moyen: moyenChoisi }) });
+    window.location.href = data.mode === "paypal" ? data.redirect_url : data.url_paiement;
   } catch (err) {
     btnPayer.disabled = false;
-    const f = forfaits[indexChoisi];
-    btnPayer.textContent = f ? `Payer ${formaterPrixFr(f.prix)} — Wave / Orange Money` : "Choisissez un forfait ci-dessus";
+    majBoutonPayer();
     document.getElementById("zone-erreur-2").innerHTML = `<div class="message-erreur">${err.message}</div>`;
   }
 });

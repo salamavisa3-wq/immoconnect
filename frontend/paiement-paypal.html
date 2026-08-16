@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Confirmation du paiement PayPal — SakeurImmo</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="entete">
+  <div class="conteneur barre">
+    <a href="index.html" class="logo"><span class="pastille"></span>SakeurImmo</a>
+    <button class="bouton-menu" aria-label="Menu" aria-expanded="false"><span></span><span></span><span></span></button>
+<nav class="nav"><a href="annonces.html">Toutes les annonces</a><a href="tableau-de-bord.html">Mon espace</a></nav>
+    <a href="tableau-de-bord.html" class="bouton bouton-fantome">Mon espace</a>
+  </div>
+</header>
+
+<div class="carte-formulaire">
+  <h2 class="mt-0">Confirmation du paiement PayPal</h2>
+  <p class="aide" style="margin-bottom:22px;">
+    Nous confirmons votre paiement auprès de PayPal. Votre compte sera activé et vos places créditées automatiquement.
+  </p>
+
+  <div id="zone-erreur"></div>
+  <div id="chargement" class="aide centre">Confirmation en cours...</div>
+</div>
+
+<script src="js/api.js"></script>
+<script>
+const zoneErreur = document.getElementById("zone-erreur");
+const params = new URLSearchParams(window.location.search);
+const reference = params.get("reference");
+const orderId = params.get("token"); // PayPal ajoute token=ORDER_ID à l'URL de retour
+
+function afficherErreur(msg, avecConnexion) {
+  document.getElementById("chargement").style.display = "none";
+  const lien = avecConnexion
+    ? `<p class="aide centre" style="margin-top:16px;"><a href="connexion.html" class="bouton bouton-primaire">Se connecter</a></p>`
+    : `<p class="aide centre" style="margin-top:16px;"><a href="inscription.html" class="bouton bouton-primaire">Retour à l'inscription</a></p>`;
+  zoneErreur.innerHTML = `<div class="message-erreur">${msg}</div>${lien}`;
+}
+
+async function confirmer() {
+  if (!reference || !orderId) {
+    return afficherErreur("Référence de paiement manquante. Reprenez depuis votre espace.");
+  }
+
+  try {
+    await appelApi("/payments/paypal-capture", {
+      method: "POST",
+      body: JSON.stringify({ order_id: orderId }),
+    });
+    window.location.href = "tableau-de-bord.html?paiement=succes";
+  } catch (err) {
+    // 401 = session expirée pendant le paiement : proposer de se reconnecter.
+    afficherErreur(err.message, /authentification|token|connect/i.test(err.message));
+  }
+}
+
+confirmer();
+</script>
+
+<script src="/js/menu.js"></script>
+</body>
+</html>
