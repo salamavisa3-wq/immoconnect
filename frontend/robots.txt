@@ -1,8 +1,4 @@
 User-agent: *
 Allow: /
-Disallow: /connexion.html
-Disallow: /inscription.html
-Disallow: /tableau-de-bord.html
-Disallow: /admin.html
 
 Sitemap: https://sakeurimmo.com/sitemap.xml
