@@ -1,0 +1,3 @@
+# Liste des fichiers/dossiers à ignorer par Render lors du build
+# Le build se fait depuis seo-automation/dashboard/
+../

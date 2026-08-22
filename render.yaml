@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: sakeurimmo-ga4-dashboard
+    runtime: docker
+    region: frankfurt
+    plan: free
+    branch: master
+    rootDir: seo-automation/dashboard
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: WEBSITE_URL
+        value: https://www.sakeurimmo.com
+      - key: GA4_MEASUREMENT_ID
+        sync: false
+      - key: CRITICAL_PATHS
+        value: /,/contact,/nos-annonces,/carte,/faq
+      - key: BASIC_AUTH_ENABLED
+        value: true
+      - key: BASIC_AUTH_USERNAME
+        sync: false
+      - key: BASIC_AUTH_PASSWORD
+        sync: false
+      - key: REPORT_DIR
+        value: /app/reports
+      - key: FLASK_DEBUG
+        value: false
+    disk:
+      name: reports
+      mountPath: /app/reports
+      sizeGB: 1
