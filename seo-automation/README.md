@@ -1,94 +1,104 @@
-# MAIn — SEO Automation for SakeurImmo
+# SakeurImmo MAIn Dashboard — GA4 Verification
 
-Projet de vérification automatisée du tag **Google Analytics 4 (GA4)** pour le site [www.sakeurimmo.com](https://www.sakeurimmo.com).
+Dashboard + outils CLI pour la vérification automatisée du tag **Google Analytics 4 (GA4)** sur [www.sakeurimmo.com](https://www.sakeurimmo.com).
 
-Ce dossier fournit :
-- un script de vérification automatique des pages critiques ;
-- un mode hybride (automatisé + validation manuelle) ;
-- une CLI interactive ;
-- un dashboard web Flask avec authentification basique ;
-- un mode *jailbreak* temporaire pour désactiver les vérifications.
-
-## Sommaire
-
-1. [Prérequis](#prérequis)
-2. [Installation](#installation)
-3. [Configuration](#configuration)
-4. [Scripts](#scripts)
-5. [CLI](#cli)
-6. [Dashboard web](#dashboard-web)
-7. [Mode jail](#mode-jail)
-8. [Automatisation](#automatisation)
-9. [Architecture](#architecture)
-10. [Sécurité](#sécurité)
+Le système est appelé **MAIn** (Manual-Automated Hybrid Verification) :
+- automatisation complète des checks mensuels ;
+- validation manuelle possible en cas d'échec (mode hybride) ;
+- mode **Jailbreak / CO Survivance** pour suspendre temporairement les alertes ;
+- authentification basique HTTP sur le dashboard.
 
 ---
 
-## Prérequis
+## 1. Fonctionnalités
+
+| Fonction | Fichier |
+|---|---|
+| Rapport mensuel automatisé GA4 | `verify_ga4_tag.py` |
+| Mode hybride auto + validation manuelle | `hybrid_verification.py` |
+| Interface CLI interactive | `ma_in_cli.py` |
+| Mode Jailbreak temporaire | `ma_in_jail.py` |
+| Dashboard web Flask + Chart.js | `dashboard/app.py` |
+| Authentification basique HTTP | `dashboard/app.py` |
+
+---
+
+## 2. Prérequis
 
 - Python 3.10+
 - pip
-- (Optionnel) compte Slack pour les alertes
-- (Optionnel) hébergement Render / VPS pour exécuter le dashboard
+- Un compte **Google Analytics 4** avec une **Measurement ID** (`G-XXXXXXXXXX`)
+- (Optionnel) Un compte Slack avec un **Bot Token** ou un **Webhook entrant** pour les alertes
+- Accès en lecture à `https://www.sakeurimmo.com`
 
-## Installation
+---
+
+## 3. Installation
 
 ```bash
 cd seo-automation
 python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
+# Linux/macOS
+source .venv/bin/activate
+
+# Windows
+.venv\Scripts\activate
+
 pip install -r requirements.txt
 cp .env.example .env
-# Éditez .env avec vos secrets
+# Éditez .env avec vos valeurs réelles
 ```
 
-## Configuration
+---
 
-Copiez `.env.example` vers `.env` puis renseignez au minimum :
+## 4. Configuration
+
+Le fichier `.env` (créé à partir de `.env.example`) contient tous les paramètres sensibles.
 
 | Variable | Description | Exemple |
 |---|---|---|
 | `WEBSITE_URL` | Site à auditer | `https://www.sakeurimmo.com` |
 | `GA4_MEASUREMENT_ID` | ID de mesure GA4 | `G-XXXXXXXXXX` |
-| `CRITICAL_PATHS` | Pages à vérifier | `/,/contact,/nos-annonces` |
+| `CRITICAL_PATHS` | Pages à vérifier (séparées par des virgules) | `/,/contact,/nos-annonces` |
 | `SLACK_BOT_TOKEN` | Token Slack (optionnel) | `xoxb-...` |
 | `SLACK_WEBHOOK_URL` | Webhook Slack (optionnel) | `https://hooks.slack.com/...` |
 | `BASIC_AUTH_USERNAME` | Login dashboard | `admin` |
-| `BASIC_AUTH_PASSWORD` | Mot de passe dashboard | `change-me` |
+| `BASIC_AUTH_PASSWORD` | Mot de passe dashboard | `change-me-strong-password` |
+| `BASIC_AUTH_ENABLED` | Active/désactive l'auth | `true` |
 
-> **Règle d'or** : aucune clé API ou mot de passe n'est écrit dans le code source.
+> **⚠️ Ne jamais commiter `.env` dans git.** Le fichier est déjà ignoré.
 
-## Scripts
+---
 
-### 1. `verify_ga4_tag.py`
+## 5. Utilisation
 
-Vérification automatique, lecture seule, de toutes les pages critiques.
+### 5.1 Vérification automatique
 
 ```bash
 python verify_ga4_tag.py
 ```
 
 - Génère un rapport JSON dans `reports/`.
-- Envoie une alerte Slack si au moins une page n'a pas de tag GA4.
-- Retourne `0` si tout est OK, `1` sinon.
+- Envoie une alerte Slack si une page critique n'a pas de tag GA4.
+- Retourne `0` si OK, `1` sinon.
+- Le rapport JSON est écrit sur `stdout` (les logs vont sur `stderr`).
 
-### 2. `hybrid_verification.py`
-
-Mode **MAIn** (Manual-Automated Hybrid) : exécute d'abord la vérification automatique, puis demande une validation humaine si une page échoue.
+### 5.2 Vérification hybride
 
 ```bash
 python hybrid_verification.py              # interactif
-python hybrid_verification.py --silent   # CI/CD, échoue sans input
+python hybrid_verification.py --silent     # CI/CD
 python hybrid_verification.py --auto-approve
 ```
 
-## CLI
+### 5.3 CLI interactive
 
 ```bash
 python ma_in_cli.py
 ```
 
-Menu interactif :
+Menu disponible :
 - `1` : vérification automatique
 - `2` : vérification hybride
 - `3` : historique des rapports
@@ -101,21 +111,23 @@ Commandes directes :
 python ma_in_cli.py check
 python ma_in_cli.py hybrid
 python ma_in_cli.py history
-python ma_in_cli.py jail activate --hours 24 --reason "maintenance WordPress"
+python ma_in_cli.py jail activate --hours 72 --reason "maintenance"
 python ma_in_cli.py jail deactivate
 python ma_in_cli.py jail status
 ```
 
-## Dashboard web
+---
 
-Lancez le dashboard Flask :
+## 6. Dashboard web
+
+Lancer le serveur Flask :
 
 ```bash
 cd dashboard
 python app.py
 ```
 
-Puis ouvrez [http://localhost:5000](http://localhost:5000).
+Ouvrir [http://127.0.0.1:5000](http://127.0.0.1:5000).
 
 ### Endpoints
 
@@ -127,30 +139,41 @@ Puis ouvrez [http://localhost:5000](http://localhost:5000).
 
 ### Authentification basique
 
-Protégée par `BASIC_AUTH_USERNAME` / `BASIC_AUTH_PASSWORD`.  
-Désactivez-la en dev avec `BASIC_AUTH_ENABLED=false`.
+Le dashboard est protégé par **HTTP Basic Auth**.
 
-## Mode jail
+- Les identifiants par défaut sont définis dans `.env` :
+  - utilisateur : `admin`
+  - mot de passe : celui défini dans `BASIC_AUTH_PASSWORD`
+- Pour désactiver l'authentification en local : `BASIC_AUTH_ENABLED=false`
+- En production, utilisez un mot de passe fort et préférez HTTPS.
 
-Désactive temporairement les vérifications (par exemple pendant une maintenance).
+---
 
-```bash
-python ma_in_jail.py activate --hours 72 --reason "migration hébergeur"
-python ma_in_jail.py status
-python ma_in_jail.py deactivate
-```
+## 7. Mode Jailbreak — CO Survivance
 
-- Le jail est stocké dans `.ma-in-jail.lock`.
-- Il expire automatiquement après le TTL.
-- Les commandes `check` et `hybrid` sont bloquées tant qu'il est actif.
+Le mode Jailbreak suspend temporairement les alertes et les vérifications automatiques.
 
-## Automatisation
+| Commande | Description |
+|---|---|
+| `python ma_in_cli.py jail activate --hours 72 --reason "maintenance"` | Active le jail pour 72 heures |
+| `python ma_in_cli.py jail deactivate` | Désactive immédiatement |
+| `python ma_in_cli.py jail status` | Affiche l'état actuel |
 
-### Cron local (vérification mensuelle)
+Mécanisme :
+- Un fichier `.ma-in-jail.lock` est créé avec un timestamp d'expiration.
+- Les commandes `check` et `hybrid` sont bloquées tant que le jail est actif.
+- Le jail expire automatiquement après le TTL.
+- La raison est journalisée pour l'audit.
+
+---
+
+## 8. Automatisation
+
+### Cron local — vérification mensuelle
 
 ```bash
 # crontab -e
-0 3 1 * * cd /chemin/vers/seo-automation && source .venv/bin/activate && python verify_ga4_tag.py
+0 3 1 * * cd /chemin/vers/seo-automation && source .venv/bin/activate && python verify_ga4_tag.py >> /var/log/ga4-check.log 2>&1
 ```
 
 ### GitHub Actions
@@ -184,34 +207,40 @@ jobs:
           path: reports/*.json
 ```
 
-## Architecture
+---
+
+## 9. Structure du projet
 
 ```
 seo-automation/
 ├── verify_ga4_tag.py          # Vérification automatique
 ├── hybrid_verification.py     # Validation hybride
 ├── ma_in_cli.py               # Interface CLI
-├── ma_in_jail.py              # Mode maintenance / jailbreak
+├── ma_in_jail.py              # Mode Jailbreak
 ├── dashboard/
 │   ├── app.py                 # Serveur Flask
 │   └── templates/index.html   # UI
 ├── requirements.txt
 ├── .env.example
-├── README.md
-└── reports/                   # Rapports JSON générés
+├── .gitignore
+└── README.md
 ```
 
-## Sécurité
+---
 
-- Aucune clé API dans le code source.
-- Aucune modification du site (lecture seule).
-- Authentification basique HTTP sur le dashboard.
-- Mode jail avec TTL et raison pour tracer les désactivations.
+## 10. Sécurité
+
+- Aucune clé API ou mot de passe n'est écrite dans le code source.
+- Les secrets sont chargés depuis `.env` (non versionné).
+- Le dashboard utilise l'authentification basique HTTP.
+- Les scripts sont en lecture seule : aucune modification du site.
 - Requêtes HTTP avec timeout strict et user-agent identifié.
 
 ---
 
-Besoin d'étendre ce système ? Prochaines étapes possibles :
-- intégrer un vrai backend PostgreSQL pour l'historique ;
-- ajouter des alertes e-mail/SMS ;
-- vérifier d'autres balises (GTM, Meta Pixel, etc.).
+## 11. Prochaines améliorations possibles
+
+- Backend PostgreSQL pour l'historique des rapports.
+- Alertes e-mail/SMS en plus de Slack.
+- Vérification d'autres balises (GTM, Meta Pixel, etc.).
+- Déploiement conteneurisé (Docker / Render / VPS).
