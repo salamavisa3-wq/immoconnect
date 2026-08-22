@@ -30,7 +30,8 @@ except ImportError:  # pragma: no cover
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s | %(levelname)-7s | %(message)s"
+    format="%(asctime)s | %(levelname)-7s | %(message)s",
+    stream=sys.stderr,
 )
 logger = logging.getLogger("ga4_check")
 
@@ -176,7 +177,10 @@ def main() -> int:
     report = check_all()
     filename = save_report(report)
 
-    print(json.dumps(report, indent=2, ensure_ascii=False))
+    # Écrire le JSON sur stdout en dernier, après les logs, pour faciliter le parsing
+    json_report = json.dumps(report, indent=2, ensure_ascii=False)
+    sys.stdout.write(json_report + "\n")
+    sys.stdout.flush()
 
     if report["status"] == "FAIL":
         send_slack_message(report)
