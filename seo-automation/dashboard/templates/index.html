@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MAIn Dashboard — GA4 Verification</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --ok: #22c55e;
+            --ko: #ef4444;
+            --accent: #38bdf8;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+        }
+        header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        header h1 { margin: 0; font-size: 1.4rem; }
+        header span { color: var(--muted); font-size: .9rem; }
+        .container { padding: 2rem; max-width: 1200px; margin: 0 auto; }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: var(--card);
+            padding: 1.2rem;
+            border-radius: .75rem;
+            border: 1px solid #334155;
+        }
+        .card h3 {
+            margin: 0 0 .5rem;
+            color: var(--muted);
+            font-size: .85rem;
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+        .card .value { font-size: 1.8rem; font-weight: 700; }
+        .ok { color: var(--ok); }
+        .ko { color: var(--ko); }
+        .accent { color: var(--accent); }
+        .charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .chart-card {
+            background: var(--card);
+            border-radius: .75rem;
+            border: 1px solid #334155;
+            padding: 1rem;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card);
+            border-radius: .75rem;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }
+        th, td { padding: .75rem 1rem; text-align: left; border-bottom: 1px solid #334155; }
+        th { color: var(--muted); font-weight: 600; font-size: .85rem; }
+        tr:last-child td { border-bottom: none; }
+        .badge {
+            display: inline-block;
+            padding: .2rem .5rem;
+            border-radius: 999px;
+            font-size: .75rem;
+            font-weight: 700;
+        }
+        .badge-pass { background: rgba(34,197,94,.15); color: var(--ok); }
+        .badge-fail { background: rgba(239,68,68,.15); color: var(--ko); }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <header>
+        <div>
+            <h1>🛡️ MAIn Dashboard</h1>
+            <span>Google Analytics 4 — Vérification automatique & hybride</span>
+        </div>
+        <div><span>Site : www.sakeurimmo.com</span></div>
+    </header>
+
+    <div class="container">
+        <div class="cards">
+            <div class="card">
+                <h3>Total checks</h3>
+                <div class="value accent" id="stat-total">—</div>
+            </div>
+            <div class="card">
+                <h3>Succès</h3>
+                <div class="value ok" id="stat-pass">—</div>
+            </div>
+            <div class="card">
+                <h3>Échecs</h3>
+                <div class="value ko" id="stat-fail">—</div>
+            </div>
+            <div class="card">
+                <h3>Temps de réponse moyen</h3>
+                <div class="value" id="stat-avg">—</div>
+            </div>
+        </div>
+
+        <div class="charts">
+            <div class="chart-card">
+                <h3>Répartition succès / échecs</h3>
+                <canvas id="pieChart"></canvas>
+            </div>
+            <div class="chart-card">
+                <h3>Tendance des 7 derniers checks</h3>
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+
+        <h2>Derniers rapports</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Mode</th>
+                    <th>Statut</th>
+                    <th>Pages OK</th>
+                    <th>Détail</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in reports %}
+                <tr>
+                    <td>{{ (r.timestamp or '?')[:19] }}</td>
+                    <td>{{ r.get('mode', 'auto') }}</td>
+                    <td>
+                        {% set status = r.get('final_status') or r.get('status') %}
+                        <span class="badge {% if status == 'PASS' %}badge-pass{% else %}badge-fail{% endif %}">
+                            {{ status }}
+                        </span>
+                    </td>
+                    <td>{{ r.get('pages_ok', 0) }} / {{ r.get('pages_checked', 0) }}</td>
+                    <td><a href="#" onclick="toggleDetails('{{ r._filename }}')">Voir</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        fetch('/api/stats')
+            .then(res => res.json())
+            .then(stats => {
+                document.getElementById('stat-total').textContent = stats.total_checks ?? 0;
+                document.getElementById('stat-pass').textContent = stats.passed ?? 0;
+                document.getElementById('stat-fail').textContent = stats.failed ?? 0;
+                document.getElementById('stat-avg').textContent = (stats.avg_response_ms ?? 0) + ' ms';
+
+                new Chart(document.getElementById('pieChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Succès', 'Échec'],
+                        datasets: [{
+                            data: [stats.passed || 0, stats.failed || 0],
+                            backgroundColor: ['#22c55e', '#ef4444'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: { plugins: { legend: { labels: { color: '#e2e8f0' } } } }
+                });
+
+                const trend = stats.trend || [];
+                new Chart(document.getElementById('trendChart'), {
+                    type: 'line',
+                    data: {
+                        labels: trend.map(t => t.date),
+                        datasets: [{
+                            label: 'PASS',
+                            data: trend.map(t => t.status === 'PASS' ? 1 : 0),
+                            borderColor: '#22c55e',
+                            tension: .3,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: { beginAtZero: true, max: 1, ticks: { color: '#94a3b8' } },
+                            x: { ticks: { color: '#94a3b8' } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            })
+            .catch(err => console.error('Stats error', err));
+
+        function toggleDetails(filename) {
+            alert('Détail : ' + filename + '\nÀ lier à une modale ou endpoint /api/checks/' + filename);
+        }
+    </script>
+</body>
+</html>
