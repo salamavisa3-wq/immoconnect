@@ -423,6 +423,7 @@ app.get("/sitemap.xml", async (req, res) => {
       { loc: "https://sakeurimmo.com/guides.html", lastmod: aujourdHui, prio: "0.8" },
       { loc: "https://sakeurimmo.com/blog.html", lastmod: aujourdHui, prio: "0.8" },
       { loc: "https://sakeurimmo.com/diaspora.html", lastmod: aujourdHui, prio: "0.8" },
+      { loc: "https://sakeurimmo.com/forfaits.html", lastmod: aujourdHui, prio: "0.8" },
       { loc: "https://sakeurimmo.com/contact.html", lastmod: aujourdHui, prio: "0.8" },
       ...categories,
       ...villes,

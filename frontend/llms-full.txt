@@ -1,0 +1,49 @@
+# SakeurImmo — Plateforme immobilière du Sénégal
+
+SakeurImmo est une plateforme en ligne qui permet aux propriétaires sénégalais de publier directement leurs annonces immobilières — terrains, appartements, maisons et villas, à vendre ou à louer — sans passer par une agence et sans commission sur la vente. Les biens sont publiés après validation par l'équipe SakeurImmo. Le paiement de la publication se fait par forfait (voir « Forfaits & tarifs »).
+
+## Forfaits & tarifs
+
+Chaque forfait donne droit à un nombre d'annonces actives. Le paiement est effectué par QR Wave ou Orange Money, ou par PayPal (carte ou compte PayPal) ; le compte est activé et les places sont créditées automatiquement après le paiement.
+
+- Forfait 5 000 FCFA : 5 annonces actives.
+- Forfait 10 000 FCFA : 10 annonces actives.
+- Forfait 15 000 FCFA : 15 annonces actives.
+
+Pour publier : créer un compte propriétaire sur https://sakeurimmo.com/inscription.html, choisir un forfait, payer, puis déposer ses annonces (photos, prix, superficie, chambres, quartier).
+
+## Parcourir les annonces
+
+Les annonces sont consultables sur https://sakeurimmo.com/annonces.html, filtrables par type de bien, ville et budget. Les types couverts : terrains à vendre, appartements à vendre, appartements à louer, appartements meublés, maisons à vendre, maisons à louer, villas à vendre, villas à louer.
+
+## Pages par ville
+
+- Immobilier à Dakar : https://sakeurimmo.com/villes/immobilier-a-dakar.html
+- Immobilier à Thiès : https://sakeurimmo.com/villes/immobilier-a-thies.html
+- Immobilier à Saly : https://sakeurimmo.com/villes/immobilier-a-saly.html
+- Immobilier à Saint-Louis : https://sakeurimmo.com/villes/immobilier-a-saint-louis.html
+- Immobilier à Touba : https://sakeurimmo.com/villes/immobilier-a-touba.html
+
+## Guides
+
+- Acheter un terrain au Sénégal : https://sakeurimmo.com/guides/acheter-un-terrain-au-senegal.html
+- Vendre son bien sans agence : https://sakeurimmo.com/guides/vendre-son-bien-au-senegal.html
+- Louer un appartement au Sénégal : https://sakeurimmo.com/guides/louer-un-appartement-au-senegal.html
+- Les meilleurs quartiers pour investir (Dakar, Thiès, Saly) : https://sakeurimmo.com/guides/quartiers-investir-dakar-thies.html
+- Acheter depuis l'étranger (diaspora) : https://sakeurimmo.com/diaspora.html
+
+## Blog par localité
+
+- Terrain à vendre à Pognène (Thiès) : https://sakeurimmo.com/blog/terrain-a-vendre-pognene-thies.html
+- Terrain à vendre à la ZAC de Thiès : https://sakeurimmo.com/blog/terrain-a-vendre-zac-thies.html
+- Terrain à vendre à Diakhaw (Thiès) : https://sakeurimmo.com/blog/terrain-a-vendre-diakhaw-thies.html
+- Villa à vendre à Thiès avec piscine : https://sakeurimmo.com/blog/villa-a-vendre-thies-piscine.html
+- Maison à vendre à Mboro : https://sakeurimmo.com/blog/maison-a-vendre-mboro.html
+- Terrain agricole à vendre à Kédougou : https://sakeurimmo.com/blog/terrain-agricole-a-vendre-kedougou.html
+- Immeuble de rapport à vendre à Thiès : https://sakeurimmo.com/blog/immeuble-de-rapport-a-vendre-thies.html
+
+## Coordonnées
+
+- E-mail : contact@sakeurimmo.com
+- Téléphone : +221 77 143 71 25 / +221 77 867 87 87
+- Adresse : Avenue El Hadji Malick Sy, Thiès, Sénégal

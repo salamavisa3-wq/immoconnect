@@ -1,0 +1,24 @@
+# SakeurImmo
+
+> SakeurImmo est la plateforme immobilière au Sénégal où les propriétaires publient directement leurs annonces — terrains, appartements, maisons et villas, à vendre ou à louer — sans intermédiaire ni commission d'agence.
+
+## Pages principales
+
+- [Annonces immobilières au Sénégal](https://sakeurimmo.com/annonces.html) : liste des annonces publiées (terrains, appartements, maisons, villas ; à vendre ou à louer), filtrables par type, ville et budget.
+- [Forfaits & tarifs](https://sakeurimmo.com/forfaits.html) : publication d'annonces par forfait — 5 000 FCFA pour 5 annonces actives, 10 000 FCFA pour 10, 15 000 FCFA pour 15. Paiement QR Wave / Orange Money ou PayPal, compte activé immédiatement.
+- [Guides & Conseils](https://sakeurimmo.com/guides.html) : guides pour acheter un terrain au Sénégal, vendre sans agence, louer un appartement, et investir par quartiers (Dakar, Thiès, Saly).
+- [Blog immobilier](https://sakeurimmo.com/blog.html) : articles par localité (Pognène, ZAC de Thiès, Diakhaw, Mboro, Kédougou…).
+- [Acheter depuis l'étranger (Diaspora)](https://sakeurimmo.com/diaspora.html) : guide de la diaspora — procuration, notaire, transfert d'argent.
+- [Contact](https://sakeurimmo.com/contact.html) : coordonnées de la plateforme.
+
+## Pages par ville
+
+- [Immobilier à Dakar](https://sakeurimmo.com/villes/immobilier-a-dakar.html)
+- [Immobilier à Thiès](https://sakeurimmo.com/villes/immobilier-a-thies.html)
+- [Immobilier à Saly](https://sakeurimmo.com/villes/immobilier-a-saly.html)
+- [Immobilier à Saint-Louis](https://sakeurimmo.com/villes/immobilier-a-saint-louis.html)
+- [Immobilier à Touba](https://sakeurimmo.com/villes/immobilier-a-touba.html)
+
+## Types de biens
+
+Terrains à vendre · Appartements à vendre · Appartements à louer · Appartements meublés · Maisons à vendre · Maisons à louer · Villas à vendre · Villas à louer (voir les catégories sur la page annonces).

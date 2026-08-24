@@ -23,6 +23,7 @@
 <meta name="twitter:image" content="https://sakeurimmo.com/images/og-image.jpg">
 
 <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="alternate" type="text/plain" href="/llms.txt">
 <link rel="stylesheet" href="css/style.css">
 <style>
   .grille-formules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
@@ -201,7 +202,7 @@
 <footer class="pied">
   <div class="conteneur">
     <div>© 2026 SakeurImmo — Plateforme immobilière, Sénégal</div>
-    <div><a href="annonces.html">Annonces</a> · <a href="inscription.html">Inscription</a> · <a href="connexion.html">Connexion</a> · <a href="contact.html">Contact</a></div>
+    <div><a href="annonces.html">Annonces</a> · <a href="forfaits.html">Forfaits</a> · <a href="inscription.html">Inscription</a> · <a href="connexion.html">Connexion</a> · <a href="contact.html">Contact</a></div>
   </div>
 </footer>
 
@@ -249,6 +250,23 @@
       "areaServed": {
         "@type": "Country",
         "name": "Sénégal"
+      },
+      "makesOffer": { "@id": "https://sakeurimmo.com/forfaits.html#service" }
+    },
+    {
+      "@type": "Service",
+      "@id": "https://sakeurimmo.com/forfaits.html#service",
+      "name": "Publication d'annonces immobilières au Sénégal",
+      "serviceType": "Plateforme immobilière en ligne",
+      "provider": { "@id": "https://sakeurimmo.com/#organization" },
+      "url": "https://sakeurimmo.com/forfaits.html",
+      "areaServed": { "@type": "Country", "name": "Sénégal" },
+      "offers": {
+        "@type": "AggregateOffer",
+        "lowPrice": "5000",
+        "highPrice": "15000",
+        "priceCurrency": "XOF",
+        "offerCount": "3"
       }
     },
     {
