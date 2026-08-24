@@ -71,6 +71,9 @@ const VILLES_SLUG_NOM = {
   "immobilier-a-saly": "Saly",
   "immobilier-a-saint-louis": "Saint-Louis",
   "immobilier-a-touba": "Touba",
+  "immobilier-a-mbour": "Mbour",
+  "immobilier-a-ziguinchor": "Ziguinchor",
+  "immobilier-a-kaolack": "Kaolack",
 };
 
 // Carte annonce côté serveur (miroir de la fonction JS carteAnnonce)
@@ -399,6 +402,9 @@ app.get("/sitemap.xml", async (req, res) => {
       "immobilier-a-saly",
       "immobilier-a-saint-louis",
       "immobilier-a-touba",
+      "immobilier-a-mbour",
+      "immobilier-a-ziguinchor",
+      "immobilier-a-kaolack",
     ].map((slug) => ({
       loc: `https://sakeurimmo.com/villes/${slug}.html`,
       lastmod: aujourdHui,
