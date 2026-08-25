@@ -14,6 +14,7 @@ const router = express.Router();
 
 const TYPES_VALIDES = [
   "terrain",
+  "terrain_location",
   "appartement_vente",
   "appartement_location",
   "appartement_meuble",
@@ -21,6 +22,10 @@ const TYPES_VALIDES = [
   "maison_location",
   "villa_vente",
   "villa_location",
+  "commerce_vente",
+  "commerce_location",
+  "immeuble_vente",
+  "immeuble_location",
 ];
 
 // --- Upload d'images ---

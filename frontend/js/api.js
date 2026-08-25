@@ -42,6 +42,11 @@ const LIBELLES_TYPE = {
   maison_location: "Maison à louer",
   villa_vente: "Villa à vendre",
   villa_location: "Villa à louer",
+  terrain_location: "Terrain à louer",
+  commerce_vente: "Commerce à vendre",
+  commerce_location: "Commerce à louer",
+  immeuble_vente: "Immeuble à vendre",
+  immeuble_location: "Immeuble à louer",
 };
 
 function formaterPrix(montant) {

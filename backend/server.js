@@ -35,6 +35,11 @@ const LIBELLES_TYPE = {
   maison_location: "Maison à louer",
   villa_vente: "Villa à vendre",
   villa_location: "Villa à louer",
+  terrain_location: "Terrain à louer",
+  commerce_vente: "Commerce à vendre",
+  commerce_location: "Commerce à louer",
+  immeuble_vente: "Immeuble à vendre",
+  immeuble_location: "Immeuble à louer",
 };
 
 const formaterPrix = (montant) => Number(montant).toLocaleString("fr-FR") + " FCFA";
@@ -63,6 +68,11 @@ const CATEGORIES_SLUG_TYPE = {
   "maisons-a-louer": "maison_location",
   "villas-a-vendre": "villa_vente",
   "villas-a-louer": "villa_location",
+  "terrains-a-louer": "terrain_location",
+  "commerces-a-vendre": "commerce_vente",
+  "commerces-a-louer": "commerce_location",
+  "immeubles-a-vendre": "immeuble_vente",
+  "immeubles-a-louer": "immeuble_location",
 };
 
 const VILLES_SLUG_NOM = {
@@ -391,6 +401,11 @@ app.get("/sitemap.xml", async (req, res) => {
       "maisons-a-louer",
       "villas-a-vendre",
       "villas-a-louer",
+      "terrains-a-louer",
+      "commerces-a-vendre",
+      "commerces-a-louer",
+      "immeubles-a-vendre",
+      "immeubles-a-louer",
     ].map((slug) => ({
       loc: `https://sakeurimmo.com/categorie/${slug}.html`,
       lastmod: aujourdHui,

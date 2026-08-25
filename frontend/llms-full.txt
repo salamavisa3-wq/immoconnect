@@ -14,7 +14,9 @@ Pour publier : créer un compte propriétaire sur https://sakeurimmo.com/inscrip
 
 ## Parcourir les annonces
 
-Les annonces sont consultables sur https://sakeurimmo.com/annonces.html, filtrables par type de bien, ville et budget. Les types couverts : terrains à vendre, appartements à vendre, appartements à louer, appartements meublés, maisons à vendre, maisons à louer, villas à vendre, villas à louer.
+Les annonces sont consultables sur https://sakeurimmo.com/annonces.html, filtrables par type de bien, ville et budget. Les types couverts : terrains à vendre et à louer, appartements à vendre, à louer et meublés, maisons à vendre et à louer, villas à vendre et à louer, commerces à vendre et à louer, immeubles à vendre et à louer.
+
+Les pages par type de bien : https://sakeurimmo.com/categorie/terrains-a-vendre.html, /categorie/appartements-a-vendre.html, /categorie/appartements-a-louer.html, /categorie/appartements-meubles.html, /categorie/maisons-a-vendre.html, /categorie/maisons-a-louer.html, /categorie/villas-a-vendre.html, /categorie/villas-a-louer.html, /categorie/commerces-a-vendre.html, /categorie/commerces-a-louer.html, /categorie/terrains-a-louer.html, /categorie/immeubles-a-vendre.html, /categorie/immeubles-a-louer.html.
 
 ## Pages par ville
 

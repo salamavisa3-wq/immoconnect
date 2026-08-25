@@ -24,4 +24,16 @@
 
 ## Types de biens
 
-Terrains à vendre · Appartements à vendre · Appartements à louer · Appartements meublés · Maisons à vendre · Maisons à louer · Villas à vendre · Villas à louer (voir les catégories sur la page annonces).
+- [Terrains à vendre](https://sakeurimmo.com/categorie/terrains-a-vendre.html)
+- [Appartements à vendre](https://sakeurimmo.com/categorie/appartements-a-vendre.html)
+- [Appartements à louer](https://sakeurimmo.com/categorie/appartements-a-louer.html)
+- [Appartements meublés](https://sakeurimmo.com/categorie/appartements-meubles.html)
+- [Maisons à vendre](https://sakeurimmo.com/categorie/maisons-a-vendre.html)
+- [Maisons à louer](https://sakeurimmo.com/categorie/maisons-a-louer.html)
+- [Villas à vendre](https://sakeurimmo.com/categorie/villas-a-vendre.html)
+- [Villas à louer](https://sakeurimmo.com/categorie/villas-a-louer.html)
+- [Commerces à vendre](https://sakeurimmo.com/categorie/commerces-a-vendre.html)
+- [Commerces à louer](https://sakeurimmo.com/categorie/commerces-a-louer.html)
+- [Terrains à louer](https://sakeurimmo.com/categorie/terrains-a-louer.html)
+- [Immeubles à vendre](https://sakeurimmo.com/categorie/immeubles-a-vendre.html)
+- [Immeubles à louer](https://sakeurimmo.com/categorie/immeubles-a-louer.html)
