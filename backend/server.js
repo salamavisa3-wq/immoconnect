@@ -371,6 +371,12 @@ app.get("/villes/:slug.html", async (req, res) => {
   }
 });
 
+// Hubs sans extension : /blog et /guides ont leur vraie page en .html ; sans ça, le trailing-slash du static
+// renvoie /blog → 301 /blog/ → 404 (dossier sans index.html). strict-routing désactivé par défaut : app.get("/blog")
+// matche aussi "/blog/". Les listings /blog.html et /guides.html restent servis par le static ci-dessous.
+app.get("/blog", (req, res) => res.redirect(301, "/blog.html"));
+app.get("/guides", (req, res) => res.redirect(301, "/guides.html"));
+
 // Cache CDN : HTML court (5 min), assets statiques long (24h) — max-age=0 par défaut ne met rien en cache au edge
 app.use(express.static(path.join(__dirname, "..", "frontend"), {
   maxAge: "1h",
