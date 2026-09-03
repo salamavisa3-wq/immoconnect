@@ -1,0 +1,17 @@
+name: Healthcheck
+
+# Ping /api/sante toutes les 15 min → un échec = run rouge (notification GitHub).
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /api/sante
+        run: |
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 https://sakeurimmo.com/api/sante)
+          echo "HTTP $code"
+          [ "$code" = "200" ]
