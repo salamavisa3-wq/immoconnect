@@ -13,17 +13,26 @@ Cloudflare (edge, inchangé) → VPS Oracle → Caddy → app Node (port 3001)
 
 ## Phase 0 — Provisionner Oracle Cloud
 
-**Option A — automatisé (recommandé)** : une fois OCI CLI configuré
-(`oci setup config`), le script provisionne l'instance + ouvre les ports :
+**Option A — automatisé (recommandé)** en 3 sous-étapes, toutes OCI CLI :
 
 ```bash
-# Prérequis : OCI CLI + variables OCI_COMPARTMENT_OCID, OCI_SUBNET_OCID
+# 0.1 — Config non-interactive : génère ~/.oci/config + clé API, affiche l'action manuelle unique.
+OCI_TENANCY_OCID=ocid1.tenancy... OCI_USER_OCID=ocid1.user... OCI_REGION=eu-marseille-1 \
+  bash deploy/oci-config.sh
+#     → Ajouter ~/.oci/oci_api_key_public.pem via Console → Profil → API keys.
+#     → Vérif : oci iam compartment list --compartment-id $OCI_TENANCY_OCID (test = OCID compartiment racine)
+
+# 0.2 — Réseau VCN + subnet public (Always Free) → affiche OCI_SUBNET_OCID à exporter.
+OCI_COMPARTMENT_OCID=ocid1.compartment... bash deploy/oci-network.sh
+
+# 0.3 — Instance A1.Flex + ouverture des ports 22/80/443 → affiche l'IP publique.
+# Prérequis : exporter OCI_COMPARTMENT_OCID, OCI_SUBNET_OCID depuis 0.2.
 SSH_PUBKEY="$(cat ~/.ssh/id_ed25519_sakeurimmo.pub)" bash deploy/oci-provision.sh
 ```
 
-Le script **refuse tout dépassement des limites Always Free** (4 OCPU / 24 Go /
-200 Go) → aucun paiement possible. Garde-fou complet : skill
-`oracle-free-tier-guard` (`/oracle-free-tier-guard`).
+Les scripts **refusent tout dépassement des limites Always Free** (4 OCPU /
+24 Go / 200 Go, 2 VCN max) → aucun paiement possible. Garde-fou complet :
+skill `oracle-free-tier-guard` (`/oracle-free-tier-guard`).
 
 **Option B — console** : suivre
 `~/.claude/skills/vps-deploy/references/oracle-cloud-setup.md` :
