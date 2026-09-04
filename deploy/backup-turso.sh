@@ -4,13 +4,19 @@
 #   - turso CLI : curl -sSfL https://get.turso.tech/install.sh | bash
 #   - auth : export TURSO_API_TOKEN=<token> (ou `turso auth login` interactif)
 #   - rclone + remote "oci" configuré (Object Storage OCI) ou Backblaze B2
-# Cron (en tant que deploy) : crontab -e → 0 3 * * * /opt/sakeurimmo/deploy/backup-turso.sh
+# Turso n'est ni Postgres ni MySQL : le backup.sh générique du skill vps-deploy
+# ne le détecte pas (sans danger, il logue juste "rien à dumper" pour cette app).
+# Ce script-ci est donc le SEUL mécanisme de sauvegarde DB de SakeurImmo — il a
+# besoin de son propre cron, distinct de celui posé par onboard-app.sh :
+# Cron (en tant que deploy) : crontab -e → 0 3 * * * /opt/apps/sakeurimmo/deploy/backup-turso.sh
 set -euo pipefail
 
-APP_DIR="/opt/sakeurimmo"
-BACKUP_DIR="/opt/backups"
+APP_DIR="/opt/apps/sakeurimmo"
+BACKUP_DIR="$APP_DIR/backups"
 RETENTION_DAYS=14
 DATE=$(date +%Y%m%d-%H%M%S)
+ALERT="/opt/scripts/alert.sh"
+trap '[ -x "$ALERT" ] && "$ALERT" "Échec sauvegarde Turso SakeurImmo ($DATE)" critical' ERR
 
 # Charge les variables du .env de l'app (TURSO_DATABASE_URL, TURSO_API_TOKEN…)
 set -a

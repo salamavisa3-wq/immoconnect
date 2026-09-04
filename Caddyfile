@@ -1,7 +1,12 @@
-# SakeurImmo — reverse proxy + HTTPS.
-# Le site est derrière Cloudflare (orange cloud) : au cutover, utilise un
-# certificat d'origine Cloudflare (voir deploy/MIGRATION.md § Cutover).
-# Sans Cloudflare en edge : Caddy obtient un certificat Let's Encrypt automatiquement.
+# RÉFÉRENCE UNIQUEMENT — pas consommé par docker-compose.yml en v2 (le
+# routage vit sur le Caddy PARTAGÉ de l'hôte, dans
+# /opt/caddy/apps/sakeurimmo.caddy, généré par onboard-app.sh).
+#
+# À coller/adapter dans /opt/caddy/apps/sakeurimmo.caddy sur le VPS au moment
+# du cutover Phase 6 (SakeurImmo est derrière Cloudflare → certificat
+# d'origine requis, pas de Let's Encrypt automatique) :
 sakeurimmo.com {
-    reverse_proxy app:3001
+    tls /opt/apps/sakeurimmo/certs/origin.pem /opt/apps/sakeurimmo/certs/origin.key
+    reverse_proxy sakeurimmo-app:3001
+    encode gzip
 }

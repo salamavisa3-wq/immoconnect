@@ -22,11 +22,9 @@ jobs:
           REMOTE_USER: ${{ secrets.VPS_USER }}
           REMOTE_PORT: ${{ secrets.VPS_PORT }}
           SOURCE: "./"
-          TARGET: /opt/sakeurimmo
+          TARGET: /opt/apps/sakeurimmo
           EXCLUDE: "/.env, /.git, /node_modules, /.claude-flow, /sakeurimmo, /seo-automation, /backend/node_modules, /docker-compose.override.yml"
           SCRIPT_BEFORE: |
-            mkdir -p /opt/sakeurimmo
+            mkdir -p /opt/apps/sakeurimmo
           SCRIPT_AFTER: |
-            cd /opt/sakeurimmo
-            docker compose up -d --build --remove-orphans
-            docker image prune -f
+            /opt/scripts/deploy-rollback.sh /opt/apps/sakeurimmo
