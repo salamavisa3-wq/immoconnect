@@ -1,6 +1,7 @@
-name: Deploy to Oracle VPS
+name: Deploy to VPS
 
-# Déploie SakeurImmo sur le VPS Oracle Cloud Free Tier à chaque push sur master.
+# Déploie SakeurImmo sur le VPS gratuit (Google Cloud Always Free, ex-Oracle)
+# à chaque push sur master. Agnostique au provider — seul VPS_HOST change.
 # Nécessite les secrets GitHub : VPS_HOST, VPS_USER, VPS_PORT, VPS_SSH_KEY.
 # Le .env vit sur le serveur (/opt/sakeurimmo/.env) et est exclu du rsync.
 on:

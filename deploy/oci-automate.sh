@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# ⚠️ SUPERSEDED (05/09/2026) — Oracle Cloud refuse les comptes Senegal.
+# SakeurImmo migre vers Google Cloud (voir deploy/MIGRATION.md, skill
+# vps-deploy scripts/gcp-provision.sh). Gardé pour reference/pays ou Oracle fonctionne.
 # ============================================================
 # oci-automate.sh — Enchaîne les 3 étapes OCI (config → réseau →
 # instance) puis pose le secret GitHub VPS_HOST dès que l'IP est

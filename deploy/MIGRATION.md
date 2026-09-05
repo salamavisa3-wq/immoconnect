@@ -1,47 +1,64 @@
-# Migration SakeurImmo → VPS Oracle Cloud Free Tier
+# Migration SakeurImmo → VPS gratuit (Google Cloud Always Free)
 
-Runbook spécifique à SakeurImmo. Le skill générique est `vps-deploy` v2
-(`~/.claude/skills/vps-deploy/`, multi-app). Adaptations : base **Turso**
-(externe, pas de Postgres → pas de service `db` dans le compose), port
-**3001**, healthcheck **`/api/sante`** (`HEALTHZ_PATH` dans `.env`, voir
-`.env.example`), **Cloudflare** en edge (certificat d'origine, pas de Let's
-Encrypt auto). SakeurImmo peut cohabiter avec d'autres apps sur le même VPS
-(ex. DelegPharma) — le Caddy de l'hôte est **partagé**, pas embarqué dans ce repo.
+Runbook spécifique à SakeurImmo. Le skill générique est `vps-deploy` v2.1.0
+(`~/.claude/skills/vps-deploy/`, multi-app, Oracle **ou** Google Cloud).
+Adaptations : base **Turso** (externe, pas de Postgres → pas de service `db`
+dans le compose), port **3001**, healthcheck **`/api/sante`**
+(`HEALTHZ_PATH` dans `.env`, voir `.env.example`), **Cloudflare** en edge
+(certificat d'origine, pas de Let's Encrypt auto). SakeurImmo peut cohabiter
+avec d'autres apps sur le même VPS — le Caddy de l'hôte est **partagé**, pas
+embarqué dans ce repo.
+
+**05/09/2026 — Pivot Oracle → Google Cloud** : Oracle Cloud refuse la
+création de compte pour le Sénégal (pays de résidence, pas de sanctions —
+juste un blocage de vérification côté Oracle). Les scripts `deploy/oci-*.sh`
+sont conservés pour référence mais **superseded** (voir en-tête de chacun) ;
+seule la Phase 0 change, tout le reste (Phases 1 à 7) est inchangé car
+`provision.sh`/`onboard-app.sh` sont agnostiques au provider.
 
 ## Architecture cible
 
 ```
-Cloudflare (edge, inchangé) → VPS Oracle → Caddy (PARTAGÉ hôte) → app Node (port 3001, réseau caddy_net)
+Cloudflare (edge, inchangé) → VPS Google Cloud (e2-micro) → Caddy (PARTAGÉ hôte) → app Node (port 3001, réseau caddy_net)
    Turso (DB) · Cloudinary (images) · PayPal · Brevo → externes, inchangés, gratuits
 ```
 
-## Phase 0 — Provisionner Oracle Cloud
+SakeurImmo étant seul sur son compose (pas de conteneur DB, Turso externe),
+il tient confortablement sur le budget e2-micro (1 Go RAM) — voir
+`~/.claude/skills/vps-deploy/references/multi-app-architecture.md` §
+*Variante Google Cloud* avant d'onboarder une 2e app sur le même VPS.
 
-**Option A — automatisé (recommandé)** en 3 sous-étapes, toutes OCI CLI :
+## Phase 0 — Provisionner Google Cloud
+
+**Prérequis, à faire une seule fois (action utilisateur, ne peut pas être
+automatisée — nécessite ton compte/carte)** :
+1. Créer un compte + projet dédié sur https://cloud.google.com/free (carte
+   bancaire demandée pour vérification, aucun débit si les quotas Always
+   Free sont respectés).
+2. Poser un **budget d'alerte à 0,01 $** (Console → Facturation → Budgets et
+   alertes) — voir `~/.claude/skills/vps-deploy/references/gcp-cloud-setup.md`.
+   Contrairement à Oracle, GCP peut facturer directement une erreur de
+   config sans bloquer le provisionnement.
+3. `gcloud auth login` + `gcloud config set project <PROJECT_ID>` +
+   `gcloud services enable compute.googleapis.com` (gcloud CLI à installer
+   en local, ou utiliser Google Cloud Shell dans le navigateur — déjà
+   authentifié, aucune installation requise).
+
+**Provisionnement (garde-fou intégré)** :
 
 ```bash
-# 0.1 — Config non-interactive : génère ~/.oci/config + clé API, affiche l'action manuelle unique.
-OCI_TENANCY_OCID=ocid1.tenancy... OCI_USER_OCID=ocid1.user... OCI_REGION=eu-marseille-1 \
-  bash deploy/oci-config.sh
-#     → Ajouter ~/.oci/oci_api_key_public.pem via Console → Profil → API keys.
-#     → Vérif : oci iam compartment list --compartment-id $OCI_TENANCY_OCID (test = OCID compartiment racine)
-
-# 0.2 — Réseau VCN + subnet public (Always Free) → affiche OCI_SUBNET_OCID à exporter.
-OCI_COMPARTMENT_OCID=ocid1.compartment... bash deploy/oci-network.sh
-
-# 0.3 — Instance A1.Flex + ouverture des ports 22/80/443 → affiche l'IP publique.
-# Prérequis : exporter OCI_COMPARTMENT_OCID, OCI_SUBNET_OCID depuis 0.2.
-SSH_PUBKEY="$(cat ~/.ssh/id_ed25519_sakeurimmo.pub)" bash deploy/oci-provision.sh
+bash ~/.claude/skills/vps-deploy/scripts/gcp-provision.sh \
+  <PROJECT_ID> sakeurimmo-prod ~/.ssh/id_ed25519_sakeurimmo.pub us-central1-a
 ```
 
-Les scripts **refusent tout dépassement des limites Always Free** (4 OCPU /
-24 Go / 200 Go, 2 VCN max) → aucun paiement possible. Garde-fou complet :
-skill `oracle-free-tier-guard` (`/oracle-free-tier-guard`).
+Le script refuse toute zone hors `us-west1`/`us-central1`/`us-east1` et
+refuse de créer une 2e instance `e2-micro` si une existe déjà sur le projet.
+Garde-fou complet : skill `gcp-free-tier-guard` (`/gcp-free-tier-guard`).
 
-**Option B — console** : suivre
-`~/.claude/skills/vps-deploy/references/oracle-cloud-setup.md` :
-instance Ubuntu 24.04 ARM, shape `VM.Standard.A1.Flex` (4 OCPU / 24 Go),
-200 Go boot volume, ports 22/80/443 ouverts.
+**Alternative — console** : suivre
+`~/.claude/skills/vps-deploy/references/gcp-cloud-setup.md` (instance
+Ubuntu 24.04, type `e2-micro`, région `us-west1`/`us-central1`/`us-east1`
+uniquement, disque `pd-standard` 30 Go, ports 22/80/443 ouverts).
 
 ## Phase 1 — Transformer le VPS en hôte multi-app
 
