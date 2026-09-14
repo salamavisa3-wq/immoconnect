@@ -4,11 +4,20 @@
 // Turso pour une persistance réelle sur les hébergeurs Node à disque éphémère
 // (Render, Railway, Fly.io...). Voir README pour la procédure.
 
-const { createClient } = require("@libsql/client");
-const path = require("path");
+// Sur Cloudflare Workers (edge), le client "node" par défaut embarque des bindings
+// natifs (sqlite3) qui font planter le worker au démarrage ("Neon: unsupported
+// Linux architecture") : le runtime isolate ne peut pas les charger, indépendamment
+// de la présence de TURSO_DATABASE_URL. Turso fournit "@libsql/client/web" (HTTP pur)
+// pour ces environnements — on détecte le runtime lui-même (userAgent Workers), pas
+// juste la variable d'env, pour ne jamais emprunter le chemin natif sous Workers.
+const surWorkers = typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
+const { createClient } = surWorkers
+  ? require("@libsql/client/web")
+  : require("@libsql/client");
+const path = surWorkers ? null : require("path");
 
 const client = createClient(
-  process.env.TURSO_DATABASE_URL
+  surWorkers || process.env.TURSO_DATABASE_URL
     ? { url: process.env.TURSO_DATABASE_URL, authToken: process.env.TURSO_AUTH_TOKEN }
     : { url: `file:${path.join(__dirname, "sakeurimmo.db")}` }
 );
@@ -114,6 +123,19 @@ CREATE INDEX IF NOT EXISTS idx_contacts_bien ON contacts(bien_id);
   try { await exec("UPDATE users SET quota_annonces = 15 WHERE statut_compte = 'actif' AND quota_annonces = 0;"); } catch (_) {}
 }
 
-const pretASync = initialiser();
+// Initialisation paresseuse : Cloudflare Workers interdit toute I/O asynchrone en
+// dehors d'un handler de requête ("Disallowed operation in global scope"), donc
+// initialiser() ne doit s'exécuter qu'au 1er accès à db.pretASync (déclenché par le
+// garde-fou par requête dans server.js), jamais au chargement du module.
+let promesseInitialisation = null;
 
-module.exports = { get, all, run, exec, pretASync };
+module.exports = {
+  get,
+  all,
+  run,
+  exec,
+  get pretASync() {
+    if (!promesseInitialisation) promesseInitialisation = initialiser();
+    return promesseInitialisation;
+  },
+};

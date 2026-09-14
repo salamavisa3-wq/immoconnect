@@ -42,7 +42,9 @@ if (cloudinaryActif) {
   });
 }
 
-const dossierUploads = path.join(__dirname, "..", "uploads");
+// __dirname n'existe pas dans le bundle Cloudflare Workers ; ne l'évaluer que sur le
+// chemin disque local (jamais emprunté en prod, où Cloudinary est toujours configuré).
+const dossierUploads = cloudinaryActif ? null : path.join(__dirname, "..", "uploads");
 if (!cloudinaryActif && !fs.existsSync(dossierUploads)) fs.mkdirSync(dossierUploads, { recursive: true });
 
 const storage = cloudinaryActif

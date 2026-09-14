@@ -1,154 +1,122 @@
-# Migration SakeurImmo → VPS gratuit (Google Cloud Always Free)
+# Migration SakeurImmo → Cloudflare Workers (Free tier, sans carte)
 
-Runbook spécifique à SakeurImmo. Le skill générique est `vps-deploy` v2.1.0
-(`~/.claude/skills/vps-deploy/`, multi-app, Oracle **ou** Google Cloud).
-Adaptations : base **Turso** (externe, pas de Postgres → pas de service `db`
-dans le compose), port **3001**, healthcheck **`/api/sante`**
-(`HEALTHZ_PATH` dans `.env`, voir `.env.example`), **Cloudflare** en edge
-(certificat d'origine, pas de Let's Encrypt auto). SakeurImmo peut cohabiter
-avec d'autres apps sur le même VPS — le Caddy de l'hôte est **partagé**, pas
-embarqué dans ce repo.
+**14/09/2026 — 2e pivot.** Oracle Cloud (compte refusé pour le Sénégal) puis
+Google Cloud (carte + vérification identité requises pour créer le compte —
+étape que l'automatisation ne doit pas franchir) ont été abandonnés au profit
+de **Cloudflare Workers** : hébergement serverless, confirmé sans carte
+bancaire à l'inscription, et `sakeurimmo.com` est déjà derrière Cloudflare
+(edge), donc pas de changement de nameservers à faire.
 
-**05/09/2026 — Pivot Oracle → Google Cloud** : Oracle Cloud refuse la
-création de compte pour le Sénégal (pays de résidence, pas de sanctions —
-juste un blocage de vérification côté Oracle). Les scripts `deploy/oci-*.sh`
-sont conservés pour référence mais **superseded** (voir en-tête de chacun) ;
-seule la Phase 0 change, tout le reste (Phases 1 à 7) est inchangé car
-`provision.sh`/`onboard-app.sh` sont agnostiques au provider.
+Ceci **sort du champ du skill `vps-deploy`** (pas de VPS, pas de Docker, pas
+de Caddy). Les fichiers `deploy/oci-*.sh`, `Dockerfile`, `docker-compose.yml`,
+`Caddyfile`, `.github/workflows/vps-deploy.yml` sont **obsolètes** (conservés
+tels quels, à supprimer plus tard si le cutover Cloudflare est validé).
 
-## Architecture cible
+## Architecture
 
 ```
-Cloudflare (edge, inchangé) → VPS Google Cloud (e2-micro) → Caddy (PARTAGÉ hôte) → app Node (port 3001, réseau caddy_net)
-   Turso (DB) · Cloudinary (images) · PayPal · Brevo → externes, inchangés, gratuits
+Cloudflare edge
+ ├── Assets (frontend/ servi directement, aucune invocation Worker)
+ └── Worker (backend/worker-entry.mjs → Express via cloudflare:node)
+       ↳ routes forcées via run_worker_first (wrangler.jsonc) :
+         /annonces.html, /categorie/*, /villes/*, /annonce/*, /sitemap.xml, /api/*
+Turso (DB, HTTP edge-safe via @libsql/client/web) · Cloudinary · PayPal · Brevo
 ```
 
-SakeurImmo étant seul sur son compose (pas de conteneur DB, Turso externe),
-il tient confortablement sur le budget e2-micro (1 Go RAM) — voir
-`~/.claude/skills/vps-deploy/references/multi-app-architecture.md` §
-*Variante Google Cloud* avant d'onboarder une 2e app sur le même VPS.
+## Ce qui a déjà été fait (code)
 
-## Phase 0 — Provisionner Google Cloud
+- `wrangler.jsonc` (racine) : config Worker + assets + `run_worker_first`.
+- `backend/worker-entry.mjs` : point d'entrée edge (`cloudflare:node`,
+  `httpServerHandler`) + `avecEnv()` (AsyncLocalStorage) pour faire circuler
+  `env` (donc `env.ASSETS`) jusque dans Express.
+- `backend/cf-context.js` (nouveau) : `getEnv()` / `avecEnv()` / `estSurWorkers()`.
+- `backend/server.js` : `app.listen()` sorti du `.then()` DB (doit s'exécuter
+  de façon synchrone pour l'adaptateur Workers) + garde-fou `db.pretASync` par
+  requête à la place ; `module.exports = app` ; nouveau helper `lireAsset()`
+  qui lit `frontend/*.html` via `env.ASSETS.fetch()` sous Workers (fs n'a pas
+  accès aux fichiers du binding assets) ou via `fs` en Node classique — les
+  7 lectures de templates (fiche annonce, grilles SSR, 404) passent par là ;
+  `express.static` (uploads + frontend complet) désactivé sous Workers
+  (redondant : Assets sert déjà tout ce qui n'est pas dans `run_worker_first`) ;
+  limiteur de débit instancié paresseusement (son store par défaut démarre un
+  `setInterval`, interdit en portée globale sous Workers).
+- `backend/db.js` : `@libsql/client/web` (HTTP pur, edge-safe) détecté par
+  runtime (`navigator.userAgent === "Cloudflare-Workers"`, pas par la simple
+  présence de `TURSO_DATABASE_URL` — sinon le client natif, qui plante au
+  chargement sous Workers, reste sollicitable par erreur de config) ;
+  `pretASync` converti en getter paresseux (la 1re requête déclenche
+  `initialiser()`, jamais le chargement du module — même raison que le
+  limiteur : pas d'I/O asynchrone en portée globale sous Workers).
+- `backend/routes/biens.routes.js` : le calcul de `dossierUploads`
+  (`__dirname`, absent du bundle Workers) n'est évalué que si Cloudinary est
+  inactif (jamais le cas en prod).
+- `package.json` (racine) : `wrangler` en devDependency.
+- `.github/workflows/cloudflare-deploy.yml` : déploiement CI/CD.
 
-**Prérequis, à faire une seule fois (action utilisateur, ne peut pas être
-automatisée — nécessite ton compte/carte)** :
-1. Créer un compte + projet dédié sur https://cloud.google.com/free (carte
-   bancaire demandée pour vérification, aucun débit si les quotas Always
-   Free sont respectés).
-2. Poser un **budget d'alerte à 0,01 $** (Console → Facturation → Budgets et
-   alertes) — voir `~/.claude/skills/vps-deploy/references/gcp-cloud-setup.md`.
-   Contrairement à Oracle, GCP peut facturer directement une erreur de
-   config sans bloquer le provisionnement.
-3. `gcloud auth login` + `gcloud config set project <PROJECT_ID>` +
-   `gcloud services enable compute.googleapis.com` (gcloud CLI à installer
-   en local, ou utiliser Google Cloud Shell dans le navigateur — déjà
-   authentifié, aucune installation requise).
+**Validé en local** (`wrangler dev` + `.dev.vars` factice, non commité —
+voir `.gitignore`) : démarrage du Worker sans crash, assets statiques servis
+en 200 sans invoquer le Worker, routes dynamiques (`/api/sante`,
+`/sitemap.xml`) atteignent bien la logique métier (échec propre en 500 dû aux
+fausses creds Turso de test, pas un crash), et surtout **`env.ASSETS.fetch()`
+confirmé fonctionnel** à travers l'AsyncLocalStorage (page 404 complète
+récupérée correctement) — c'était le point le plus incertain de toute
+l'architecture.
 
-**Provisionnement (garde-fou intégré)** :
+## Ce qu'il reste à faire (actions utilisateur — nécessitent ton compte)
 
+### 1. Compte Cloudflare (si pas déjà fait pour ce domaine)
+`sakeurimmo.com` semble déjà géré par Cloudflare — si un compte existe déjà
+(Dashboard → le domaine apparaît), passer à l'étape 2.
+
+### 2. Jeton API Cloudflare (scope minimal)
+Dashboard Cloudflare → **My Profile → API Tokens → Create Token** → template
+« Edit Cloudflare Workers » (donne uniquement les droits Workers Scripts +
+Workers Routes + Zone Read sur `sakeurimmo.com`, pas un accès compte complet).
+Noter aussi l'**Account ID** (visible dans l'URL du dashboard ou en bas de la
+page d'un domaine).
+
+### 3. Secrets GitHub
+Repo → Settings → Secrets and variables → Actions :
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+### 4. Secrets applicatifs (une seule fois, pas dans le repo ni le workflow)
 ```bash
-bash ~/.claude/skills/vps-deploy/scripts/gcp-provision.sh \
-  <PROJECT_ID> sakeurimmo-prod ~/.ssh/id_ed25519_sakeurimmo.pub us-central1-a
+npm install -g wrangler   # ou npx wrangler
+wrangler login
+wrangler secret put TURSO_DATABASE_URL
+wrangler secret put TURSO_AUTH_TOKEN
+wrangler secret put JWT_SECRET
+wrangler secret put CLOUDINARY_CLOUD_NAME
+wrangler secret put CLOUDINARY_API_KEY
+wrangler secret put CLOUDINARY_API_SECRET
+wrangler secret put FRONTEND_URL     # https://sakeurimmo.com
+# PAYPAL_*/BREVO_* si utilisés en prod
 ```
 
-Le script refuse toute zone hors `us-west1`/`us-central1`/`us-east1` et
-refuse de créer une 2e instance `e2-micro` si une existe déjà sur le projet.
-Garde-fou complet : skill `gcp-free-tier-guard` (`/gcp-free-tier-guard`).
-
-**Alternative — console** : suivre
-`~/.claude/skills/vps-deploy/references/gcp-cloud-setup.md` (instance
-Ubuntu 24.04, type `e2-micro`, région `us-west1`/`us-central1`/`us-east1`
-uniquement, disque `pd-standard` 30 Go, ports 22/80/443 ouverts).
-
-## Phase 1 — Transformer le VPS en hôte multi-app
-
+### 5. Premier déploiement (test, avant cutover DNS — le domaine y est déjà routé via wrangler.jsonc, donc ceci EST le cutover)
 ```bash
-ssh ubuntu@<IP> "mkdir -p /tmp/vps-deploy"
-scp -r ~/.claude/skills/vps-deploy/scripts ~/.claude/skills/vps-deploy/templates ubuntu@<IP>:/tmp/vps-deploy/
-ssh ubuntu@<IP> "sudo bash /tmp/vps-deploy/scripts/provision.sh deploy '<TA_CLE_PUBLIQUE_DEPLOY>'"
-ssh deploy@<IP> "docker ps"   # → conteneur 'caddy' (partagé) up
+npm install && npm install --prefix backend
+npx wrangler deploy
+curl -s https://sakeurimmo.com/api/sante   # → {"statut":"ok",...}
 ```
+`wrangler.jsonc` route déjà `sakeurimmo.com` et `www.sakeurimmo.com` vers ce
+Worker (`custom_domain: true`, auto-provisionné car le domaine est déjà sur
+Cloudflare) — **le premier `wrangler deploy` réussi bascule le trafic
+immédiatement**. Prévoir de le faire à un moment calme, pas en pleine journée
+de trafic.
 
-## Phase 1.5 — Onboarder SakeurImmo
-
-```bash
-ssh deploy@<IP> "sudo bash /opt/scripts/onboard-app.sh sakeurimmo sakeurimmo.com node 3001"
-```
-Crée `/opt/apps/sakeurimmo/`, écrit une route Caddy par défaut (Let's Encrypt
-auto) dans `/opt/caddy/apps/sakeurimmo.caddy` — **à remplacer par la version
-avec certificat d'origine Cloudflare au Phase 6** (voir plus bas), et
-programme le cron de backup générique (harmless pour SakeurImmo : pas de
-service `db` Postgres/MySQL à dumper, voir Phase 5 pour le vrai mécanisme Turso).
-
-## Phase 2 — .env sur le serveur
-
-Copier les valeurs **actuelles** depuis Render (Settings → Environment) vers
-`/opt/apps/sakeurimmo/.env` (modèle : `.env.example` à la racine du repo).
-Variables critiques : `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`,
-`CLOUDINARY_*`, `JWT_SECRET`, `FRONTEND_URL=https://sakeurimmo.com`,
-`PORT=3001`, `NODE_ENV=production`, `PUBLIC_URL=sakeurimmo.com`,
-`HEALTHZ_PATH=/api/sante`.
-
-```bash
-ssh deploy@<IP> "nano /opt/apps/sakeurimmo/.env"
-```
-
-## Phase 3 — Test sans cutover (port alternatif)
-
-Avant de toucher le DNS, tester sur un port/domaine de secours :
-
-```bash
-ssh deploy@<IP> "cd /opt/apps/sakeurimmo && docker compose up -d --build"
-ssh deploy@<IP> "curl -s http://localhost:3001/api/sante"
-```
-
-## Phase 4 — GitHub Actions
-
-1. Générer une clé de déploiement : `ssh-keygen -t ed25519 -f deploy_key -N ""`
-2. Ajouter la clé publique à `/home/deploy/.ssh/authorized_keys` sur le VPS
-3. Secrets GitHub (Settings → Secrets and variables → Actions) :
-   `VPS_HOST`, `VPS_USER`, `VPS_PORT`, `VPS_SSH_KEY`
-4. Test : `workflow_dispatch` sur `vps-deploy.yml` → workflow vert. Le
-   `SCRIPT_AFTER` appelle `/opt/scripts/deploy-rollback.sh` (health-gated,
-   rollback auto si `/api/sante` ne répond pas 200 sous 90s après déploiement).
-
-## Phase 5 — Sauvegardes
-
-```bash
-# Sur le VPS
-curl -sSfL https://get.turso.tech/install.sh | bash
-export TURSO_API_TOKEN=<token>   # à ajouter au .env
-# rclone + remote "oci" (Object Storage OCI, 10 Go gratuits)
-crontab -e   # → 0 3 * * * /opt/apps/sakeurimmo/deploy/backup-turso.sh
-```
-
-## Phase 6 — Cutover (le moment où le site bascule)
-
-1. Vérifier que le VPS répond : `curl -s http://<IP_VPS>/api/sante` → `{"statut":"ok"}`
-2. **Certificat d'origine Cloudflare** (le site est derrière Cloudflare) :
-   - Cloudflare Dashboard → SSL/TLS → Origin Server → Create Certificate
-   - Copier le certificat + la clé sur le VPS : `/opt/apps/sakeurimmo/certs/origin.pem` + `origin.key`
-   - Remplacer `/opt/caddy/apps/sakeurimmo.caddy` (généré par `onboard-app.sh`
-     en Phase 1.5, Let's Encrypt auto) par la version avec certificat
-     d'origine (voir `Caddyfile` à la racine de ce repo, tenu à jour comme
-     référence) puis recharger : `docker exec caddy caddy reload --config /etc/caddy/Caddyfile`
-     — **ne casse pas les autres apps** déjà onboardées sur le même VPS.
-   - SSL/TLS mode Cloudflare : **Full (strict)**
-3. **DNS** : Cloudflare → DNS → Records → changer l'A record `sakeurimmo.com`
-   de l'IP Render vers l'IP du VPS (garder le proxy orange).
-4. Vérifier : `curl -sI https://sakeurimmo.com` → `Server: cloudflare`, plus de `x-render-origin-server`.
-5. Purger le cache Cloudflare (Purge Everything).
-
-## Phase 7 (optionnel) — Dashboard GA4
-
-`seo-automation/dashboard` (Flask) reste sur Render free tier. À migrer plus
-tard si tu veux quitter Render complètement : **onboarder comme une 2e app**
-sur le même VPS (`onboard-app.sh seo-dashboard <sous-domaine> python <port>`)
-plutôt que d'ajouter un service au compose de SakeurImmo — garde les deux
-apps isolées réseau (voir `references/multi-app-architecture.md` du skill).
+### 6. Après cutover validé
+- Basculer `push master` définitivement sur `cloudflare-deploy.yml` (déjà actif).
+- Supprimer `render-deploy.yml` et `keepalive.yml` (Render, plus utile — Workers
+  ne dort jamais) et `vps-deploy.yml` + fichiers `oci-*.sh`/Docker/Caddy.
+- Downgrade ou suppression du service Render (pour ne plus rien payer/consommer
+  côté Render — il est en free tier donc 0 coût, mais autant nettoyer).
 
 ## Rollback
 
-- **Déploiement cassé (healthcheck /api/sante échoue)** : automatique — `deploy-rollback.sh` retag et relance l'image précédente sous 90s, aucune action requise.
-- **Déploiement "healthy" mais buggé fonctionnellement** : `git revert <sha>` + push → le workflow redéploie (health-gated) la version revert.
-- **Site** : remettre l'A record Cloudflare sur l'IP Render (le VPS reste en place).
+- **Déploiement Worker cassé** : `wrangler rollback` (revient à la version
+  précédente instantanément — Cloudflare garde l'historique des déploiements).
+- **Cutover complet à annuler** : retirer les entrées `routes` de
+  `wrangler.jsonc` et redéployer, ou pointer à nouveau le DNS vers Render tant
+  que ce service est encore actif.

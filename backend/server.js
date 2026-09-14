@@ -8,12 +8,31 @@ const fs = require("fs");
 const rateLimit = require("express-rate-limit");
 
 const db = require("./db");
+const { getEnv, estSurWorkers } = require("./cf-context");
 const authRoutes = require("./routes/auth.routes");
 const paymentsRoutes = require("./routes/payments.routes");
 const biensRoutes = require("./routes/biens.routes");
 const contactsRoutes = require("./routes/contacts.routes");
 
 const app = express();
+
+// Lit un fichier de frontend/ : sur Cloudflare Workers, fs n'a pas accès aux fichiers
+// du binding assets (ASSETS) — il faut passer par son API fetch() ; en Node classique
+// (local/dev), fs fonctionne normalement. Renvoie null si le fichier n'existe pas.
+async function lireAsset(cheminRelatif) {
+  const env = getEnv();
+  if (env) {
+    const reponse = await env.ASSETS.fetch(new Request(`https://assets.local/${cheminRelatif}`));
+    return reponse.ok ? reponse.text() : null;
+  }
+  const chemin = path.join(__dirname, "..", "frontend", cheminRelatif);
+  return fs.existsSync(chemin) ? fs.readFileSync(chemin, "utf8") : null;
+}
+
+async function envoyer404(res) {
+  const html = await lireAsset("404.html");
+  res.status(404).type("html").send(html ?? "Page introuvable.");
+}
 
 // Slug SEO déterministe d'un titre (miroir de frontend/js/api.js)
 function slugifier(titre) {
@@ -174,8 +193,13 @@ function rendreGrilleTemplate(templateHtml, biens, canonicalUrl) {
   return html;
 }
 
-// Template de la fiche annonce, lu une seule fois au démarrage
-const templateAnnonce = fs.readFileSync(path.join(__dirname, "..", "frontend", "annonce.html"), "utf8");
+// Template de la fiche annonce, mis en cache après la 1re lecture (par isolate sur
+// Workers) — lecture async car elle peut passer par env.ASSETS.fetch (voir lireAsset).
+let templateAnnonceCache = null;
+async function obtenirTemplateAnnonce() {
+  if (!templateAnnonceCache) templateAnnonceCache = await lireAsset("annonce.html");
+  return templateAnnonceCache;
+}
 
 // Construit le JSON-LD RealEstateListing pour une fiche
 function jsonLdRealEstateListing(b, canonicalUrl) {
@@ -228,7 +252,7 @@ function jsonLdRealEstateListing(b, canonicalUrl) {
 // Rendu serveur de la fiche : SEO (title/desc/canonical/og/twitter) + contenu statique de
 // repli, identiques à ceux que le JS client poserait. Sans JS, Google voit une page complète
 // et auto-canonique au lieu d'un doublon de /annonce.html.
-function rendreFicheAnnonce(b) {
+async function rendreFicheAnnonce(b) {
   const typeTxt = LIBELLES_TYPE[b.type_bien] || b.type_bien;
   const transactionTxt = b.transaction_type === "vente" ? "à vendre" : "à louer";
   const villeTxt = b.ville ? ` à ${b.ville}` : "";
@@ -286,6 +310,7 @@ function rendreFicheAnnonce(b) {
       </form>
     </div>`;
 
+  const templateAnnonce = await obtenirTemplateAnnonce();
   return templateAnnonce
     .replace(/<title>[^<]*<\/title>/, `<title>${echapper(titreSeo)}</title>`)
     .replace(/(<meta name="description" content=")[^"]*(">)/, `$1${echapper(descSeo)}$2`)
@@ -305,6 +330,13 @@ function rendreFicheAnnonce(b) {
 // sans ça, express-rate-limit refuse de lire X-Forwarded-For pour identifier les clients.
 app.set("trust proxy", 1);
 
+// Sur Cloudflare Workers, app.listen() (plus bas) doit s'exécuter de façon synchrone
+// pour que l'adaptateur cloudflare:node s'y attache dès le chargement du module —
+// la BDD peut donc ne pas être prête pour la toute première requête d'un cold start.
+// Ce garde-fou fait attendre chaque requête sur db.pretASync (résolu une seule fois
+// par isolate, coût négligible ensuite) au lieu de retarder app.listen() lui-même.
+app.use((req, res, next) => { db.pretASync.then(() => next(), next); });
+
 // Filet de sécurité : une erreur synchrone dans un handler async (ex. jwt.sign avec un
 // secret manquant) devient un rejet de promesse non intercepté par Express 4 et tuait
 // tout le process. On log au lieu de laisser Node terminer le serveur.
@@ -316,7 +348,11 @@ process.on("unhandledRejection", (err) => {
 // et Cloudflare ne met rien en cache (cf-cache-status: DYNAMIC = chaque requête touche Render)
 app.use("/api/", cors({ origin: process.env.FRONTEND_URL || "*" }));
 app.use(express.json({ limit: "10mb" }));
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// __dirname est utilisable ici en Node classique ; sur Workers, ce middleware est
+// inutile (Cloudinary gère les images en prod) et __dirname n'existe pas dans le bundle.
+if (!estSurWorkers()) {
+  app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+}
 
 // --- SSR des grilles d'annonces (SEO) : AVANT le statique, pour intercepter les URLs de listing ---
 // /annonces.html (vue par défaut), /categorie/<slug>.html, /villes/<slug>.html
@@ -325,10 +361,13 @@ app.get("/annonces.html", async (req, res) => {
   try {
     if (Object.keys(req.query).length) {
       // Vue filtrée (?ville=, ?type=...) : on laisse le shell au JS client (comportement d'origine)
-      return res.sendFile(path.join(__dirname, "..", "frontend", "annonces.html"));
+      const shell = await lireAsset("annonces.html");
+      if (shell === null) return envoyer404(res);
+      return res.type("html").send(shell);
     }
     const biens = await listerBiensPublies();
-    const template = fs.readFileSync(path.join(__dirname, "..", "frontend", "annonces.html"), "utf8");
+    const template = await lireAsset("annonces.html");
+    if (template === null) return envoyer404(res);
     res.set("Cache-Control", "public, max-age=300");
     res.send(rendreGrilleTemplate(template, biens, "https://sakeurimmo.com/annonces.html"));
   } catch (e) {
@@ -340,12 +379,14 @@ app.get("/annonces.html", async (req, res) => {
 app.get("/categorie/:slug.html", async (req, res) => {
   const type = CATEGORIES_SLUG_TYPE[req.params.slug];
   if (!type) {
-    return res.sendFile(path.join(__dirname, "..", "frontend", "categorie", `${req.params.slug}.html`));
+    const html = await lireAsset(`categorie/${req.params.slug}.html`);
+    if (html === null) return envoyer404(res);
+    return res.type("html").send(html);
   }
   try {
     const biens = await listerBiensPublies({ type });
-    const chemin = path.join(__dirname, "..", "frontend", "categorie", `${req.params.slug}.html`);
-    const template = fs.readFileSync(chemin, "utf8");
+    const template = await lireAsset(`categorie/${req.params.slug}.html`);
+    if (template === null) return envoyer404(res);
     res.set("Cache-Control", "public, max-age=300");
     res.send(rendreGrilleTemplate(template, biens, `https://sakeurimmo.com/categorie/${req.params.slug}.html`));
   } catch (e) {
@@ -357,12 +398,14 @@ app.get("/categorie/:slug.html", async (req, res) => {
 app.get("/villes/:slug.html", async (req, res) => {
   const ville = VILLES_SLUG_NOM[req.params.slug];
   if (!ville) {
-    return res.sendFile(path.join(__dirname, "..", "frontend", "villes", `${req.params.slug}.html`));
+    const html = await lireAsset(`villes/${req.params.slug}.html`);
+    if (html === null) return envoyer404(res);
+    return res.type("html").send(html);
   }
   try {
     const biens = await listerBiensPublies({ ville });
-    const chemin = path.join(__dirname, "..", "frontend", "villes", `${req.params.slug}.html`);
-    const template = fs.readFileSync(chemin, "utf8");
+    const template = await lireAsset(`villes/${req.params.slug}.html`);
+    if (template === null) return envoyer404(res);
     res.set("Cache-Control", "public, max-age=300");
     res.send(rendreGrilleTemplate(template, biens, `https://sakeurimmo.com/villes/${req.params.slug}.html`));
   } catch (e) {
@@ -377,19 +420,28 @@ app.get("/villes/:slug.html", async (req, res) => {
 app.get("/blog", (req, res) => res.redirect(301, "/blog.html"));
 app.get("/guides", (req, res) => res.redirect(301, "/guides.html"));
 
-// Cache CDN : HTML court (5 min), assets statiques long (24h) — max-age=0 par défaut ne met rien en cache au edge
-app.use(express.static(path.join(__dirname, "..", "frontend"), {
-  maxAge: "1h",
-  setHeaders: (res, chemin) => {
-    if (/\.(css|js|svg|jpg|jpeg|png|webp|ico)$/i.test(chemin)) {
-      res.setHeader("Cache-Control", "public, max-age=86400");
-    }
-  },
-}));
+// Cache CDN : HTML court (5 min), assets statiques long (24h) — max-age=0 par défaut ne met rien en cache au edge.
+// Sur Workers, le binding Assets sert déjà tout frontend/ directement (sans invoquer ce
+// Worker) pour les chemins hors run_worker_first — ce middleware ne sert qu'en Node classique.
+if (!estSurWorkers()) {
+  app.use(express.static(path.join(__dirname, "..", "frontend"), {
+    maxAge: "1h",
+    setHeaders: (res, chemin) => {
+      if (/\.(css|js|svg|jpg|jpeg|png|webp|ico)$/i.test(chemin)) {
+        res.setHeader("Cache-Control", "public, max-age=86400");
+      }
+    },
+  }));
+}
 
-// Limite de débit globale contre les abus
-const limiteur = rateLimit({ windowMs: 15 * 60 * 1000, max: 300 });
-app.use("/api/", limiteur);
+// Limite de débit globale contre les abus. Instanciation paresseuse : le store par
+// défaut de express-rate-limit démarre un setInterval de nettoyage dès sa création,
+// ce que Workers interdit en dehors d'un handler de requête ("I/O in global scope").
+let limiteur = null;
+app.use("/api/", (req, res, next) => {
+  if (!limiteur) limiteur = rateLimit({ windowMs: 15 * 60 * 1000, max: 300 });
+  limiteur(req, res, next);
+});
 
 app.get("/api/sante", (req, res) => res.json({ statut: "ok", heure: new Date().toISOString() }));
 
@@ -491,12 +543,12 @@ app.use("/api/contacts", contactsRoutes);
 app.get("/annonce/:slugId", async (req, res) => {
   try {
     const id = Number((req.params.slugId.replace(/\.html$/, "").match(/(\d+)$/) || [])[1]);
-    if (!id) return res.status(404).sendFile(path.join(__dirname, "..", "frontend", "404.html"));
+    if (!id) return envoyer404(res);
     const b = await db.get("SELECT * FROM biens WHERE id = ? AND statut = 'publie'", [id]);
-    if (!b) return res.status(404).sendFile(path.join(__dirname, "..", "frontend", "404.html"));
+    if (!b) return envoyer404(res);
     b.images = JSON.parse(b.images || "[]");
     res.set("Cache-Control", "public, max-age=300");
-    res.send(rendreFicheAnnonce(b));
+    res.send(await rendreFicheAnnonce(b));
   } catch (e) {
     console.error("Erreur fiche annonce :", e);
     res.status(500).send("Erreur serveur.");
@@ -508,7 +560,7 @@ app.use((req, res) => {
   if (req.path.startsWith("/api/")) {
     return res.status(404).json({ erreur: "Route introuvable." });
   }
-  res.status(404).sendFile(path.join(__dirname, "..", "frontend", "404.html"));
+  envoyer404(res);
 });
 
 app.use((err, req, res, next) => {
@@ -516,14 +568,13 @@ app.use((err, req, res, next) => {
   res.status(500).json({ erreur: err.message || "Erreur interne du serveur." });
 });
 
+// db.pretASync n'est PAS touché ici : y accéder au chargement du module redéclencherait
+// exactement le problème que le garde-fou par requête (plus haut) résout — Workers
+// interdit l'I/O asynchrone en dehors d'un handler. Les échecs d'initialisation sont
+// donc journalisés via le gestionnaire d'erreurs Express (plus bas), au 1er accès réel.
 const PORT = process.env.PORT || 3001;
-db.pretASync
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`✅ SakeurImmo API démarrée sur http://localhost:${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("Échec d'initialisation de la base de données :", err);
-    process.exit(1);
-  });
+app.listen(PORT, () => {
+  console.log(`✅ SakeurImmo API démarrée sur http://localhost:${PORT}`);
+});
+
+module.exports = app;

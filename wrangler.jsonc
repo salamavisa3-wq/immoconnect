@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sakeurimmo",
+  "main": "backend/worker-entry.mjs",
+  "compatibility_date": "2025-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./frontend",
+    "binding": "ASSETS",
+    // Ces routes précises passent toujours par le Worker (SSR + API) même si un
+    // fichier statique du même nom existe dans frontend/ ; tout le reste (CSS/JS/
+    // images/autres pages) est servi directement par l'edge, sans invoquer le Worker.
+    "run_worker_first": [
+      "/annonces.html",
+      "/categorie/*",
+      "/villes/*",
+      "/annonce/*",
+      "/sitemap.xml",
+      "/api/*"
+    ]
+  },
+  "routes": [
+    { "pattern": "sakeurimmo.com", "custom_domain": true },
+    { "pattern": "www.sakeurimmo.com", "custom_domain": true }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

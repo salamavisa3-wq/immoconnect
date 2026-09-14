@@ -1,0 +1,29 @@
+name: Deploy to Cloudflare Workers
+
+# Déploie SakeurImmo sur Cloudflare Workers (Free tier, sans carte bancaire) à
+# chaque push sur master. Remplace vps-deploy.yml (pivot VPS → serverless edge,
+# voir deploy/MIGRATION.md). Secrets applicatifs (TURSO_*, CLOUDINARY_*,
+# JWT_SECRET...) posés une fois via `wrangler secret put`, pas dans ce workflow.
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install root deps (wrangler)
+        run: npm install
+
+      - name: Install backend deps
+        run: npm install
+        working-directory: backend
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

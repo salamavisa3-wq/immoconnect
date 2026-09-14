@@ -4,3 +4,5 @@ node_modules
 backend/tmp-import/
 .env
 .env.local
+.dev.vars
+.wrangler
