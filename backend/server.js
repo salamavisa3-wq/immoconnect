@@ -34,6 +34,50 @@ async function envoyer404(res) {
   res.status(404).type("html").send(html ?? "Page introuvable.");
 }
 
+// Sur Cloudflare Workers, express.json() (body-parser → raw-body → iconv-lite) plante au
+// démarrage : iconv-lite déclare `"browser": { "./lib/streams": false }` dans son package.json,
+// et le bundler de Wrangler applique ce remappage même pour Workers — require("./streams")
+// devient `false`, appelé comme fonction ("require_streams(...) is not a function"). On lit le
+// JSON nous-mêmes sur Workers (flux Node standard, sans passer par iconv-lite) ; ailleurs
+// (Render/local), express.json() reste inchangé.
+function jsonWorkersSafe(limiteOctets) {
+  return (req, res, next) => {
+    const type = (req.headers["content-type"] || "").split(";")[0].trim().toLowerCase();
+    if (req.method === "GET" || req.method === "HEAD" || type !== "application/json") {
+      return next();
+    }
+    const morceaux = [];
+    let taille = 0;
+    let termine = false;
+    const finir = (err) => {
+      if (termine) return;
+      termine = true;
+      next(err);
+    };
+    req.on("data", (chunk) => {
+      if (termine) return;
+      taille += chunk.length;
+      if (taille > limiteOctets) {
+        req.destroy();
+        finir(Object.assign(new Error("Corps de requête trop volumineux."), { status: 413 }));
+        return;
+      }
+      morceaux.push(chunk);
+    });
+    req.on("end", () => {
+      if (termine) return;
+      const texte = Buffer.concat(morceaux).toString("utf8").trim();
+      try {
+        req.body = texte ? JSON.parse(texte) : {};
+        finir();
+      } catch (e) {
+        finir(Object.assign(new Error("JSON invalide."), { status: 400 }));
+      }
+    });
+    req.on("error", finir);
+  };
+}
+
 // Slug SEO déterministe d'un titre (miroir de frontend/js/api.js)
 function slugifier(titre) {
   return String(titre || "")
@@ -347,7 +391,7 @@ process.on("unhandledRejection", (err) => {
 // CORS uniquement sur l'API : sans ça, Vary:Origin est envoyé sur les fichiers statiques
 // et Cloudflare ne met rien en cache (cf-cache-status: DYNAMIC = chaque requête touche Render)
 app.use("/api/", cors({ origin: process.env.FRONTEND_URL || "*" }));
-app.use(express.json({ limit: "10mb" }));
+app.use(estSurWorkers() ? jsonWorkersSafe(10 * 1024 * 1024) : express.json({ limit: "10mb" }));
 // __dirname est utilisable ici en Node classique ; sur Workers, ce middleware est
 // inutile (Cloudinary gère les images en prod) et __dirname n'existe pas dans le bundle.
 if (!estSurWorkers()) {

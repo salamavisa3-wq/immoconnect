@@ -4,6 +4,12 @@
   "main": "backend/worker-entry.mjs",
   "compatibility_date": "2025-09-01",
   "compatibility_flags": ["nodejs_compat"],
+  // require("express") accède à bodyParser.json dès son chargement (avant tout code
+  // applicatif), ce qui charge iconv-lite — qui plante au bundling Workers (voir le
+  // commentaire dans backend/shims/iconv-lite-stub.js). On remplace le module entier.
+  "alias": {
+    "iconv-lite": "./backend/shims/iconv-lite-stub.js"
+  },
   "assets": {
     "directory": "./frontend",
     "binding": "ASSETS",
