@@ -13,27 +13,21 @@
 
 ## Pages par ville
 
+<!-- Seules les villes avec au moins une annonce réelle sont listées ici — les
+     pages sans annonce sont en noindex (voir backend/server.js, rendreGrilleTemplate)
+     et absentes de /sitemap.xml ; les lister ici serait un signal contradictoire
+     pour les crawlers IA. Fichier statique, PAS régénéré automatiquement comme le
+     sitemap : à remettre à jour à la main quand une ville reçoit sa 1re annonce
+     réelle (Mbour, Saint-Louis, Touba, Ziguinchor, Kaolack actuellement vides). -->
 - [Immobilier à Dakar](https://sakeurimmo.com/villes/immobilier-a-dakar.html)
 - [Immobilier à Thiès](https://sakeurimmo.com/villes/immobilier-a-thies.html)
 - [Immobilier à Saly](https://sakeurimmo.com/villes/immobilier-a-saly.html)
-- [Immobilier à Saint-Louis](https://sakeurimmo.com/villes/immobilier-a-saint-louis.html)
-- [Immobilier à Touba](https://sakeurimmo.com/villes/immobilier-a-touba.html)
-- [Immobilier à Mbour](https://sakeurimmo.com/villes/immobilier-a-mbour.html)
-- [Immobilier à Ziguinchor](https://sakeurimmo.com/villes/immobilier-a-ziguinchor.html)
-- [Immobilier à Kaolack](https://sakeurimmo.com/villes/immobilier-a-kaolack.html)
 
 ## Types de biens
 
+<!-- Idem : seuls les types avec au moins une annonce réelle. Appartements
+     (vente/location/meublé), maisons à louer, villas à louer, commerces,
+     terrains à louer et immeubles sont actuellement sans annonce. -->
 - [Terrains à vendre](https://sakeurimmo.com/categorie/terrains-a-vendre.html)
-- [Appartements à vendre](https://sakeurimmo.com/categorie/appartements-a-vendre.html)
-- [Appartements à louer](https://sakeurimmo.com/categorie/appartements-a-louer.html)
-- [Appartements meublés](https://sakeurimmo.com/categorie/appartements-meubles.html)
 - [Maisons à vendre](https://sakeurimmo.com/categorie/maisons-a-vendre.html)
-- [Maisons à louer](https://sakeurimmo.com/categorie/maisons-a-louer.html)
 - [Villas à vendre](https://sakeurimmo.com/categorie/villas-a-vendre.html)
-- [Villas à louer](https://sakeurimmo.com/categorie/villas-a-louer.html)
-- [Commerces à vendre](https://sakeurimmo.com/categorie/commerces-a-vendre.html)
-- [Commerces à louer](https://sakeurimmo.com/categorie/commerces-a-louer.html)
-- [Terrains à louer](https://sakeurimmo.com/categorie/terrains-a-louer.html)
-- [Immeubles à vendre](https://sakeurimmo.com/categorie/immeubles-a-vendre.html)
-- [Immeubles à louer](https://sakeurimmo.com/categorie/immeubles-a-louer.html)
