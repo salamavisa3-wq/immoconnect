@@ -224,15 +224,24 @@ function jsonLdItemList(biens, canonicalUrl) {
 // Le placeholder « Chargement des annonces... » existe dans le HTML de annonces.html,
 // des 8 catégories et des 5 villes : un seul remplacement (non-global) le couvre tous.
 // La 2e occurrence (celle du script client) n'est pas touchée — le JS re-rend la même grille.
-function rendreGrilleTemplate(templateHtml, biens, canonicalUrl) {
+//
+// noindex si grille vide : une page catégorie/ville sans annonce réelle est une page
+// doorway indexée (SEO audit saas-seo-keywords du 15/09 — 4 villes/8 et 9 catégories/12
+// sans inventaire réel). `permettreNoindex=false` exempte /annonces.html (hub principal,
+// jamais noindexé même à vide) — les pages catégorie/ville, elles, repassent seules en
+// index dès qu'une vraie annonce y apparaît : rien à retenir ni à réactiver à la main.
+function rendreGrilleTemplate(templateHtml, biens, canonicalUrl, permettreNoindex = true) {
   const grilleHtml = biens.length
     ? biens.map(carteAnnonceHtml).join("\n")
     : `<p style="color:var(--texte-clair);">Aucune annonce ne correspond pour le moment. Sur SakeurImmo, les propriétaires publient leurs biens directement — soyez le premier à publier le vôtre, dès 5000 FCFA.</p>
 <p style="margin-top:18px;"><a href="/inscription.html" class="bouton bouton-primaire">Publier une annonce</a></p>`;
-  const html = templateHtml.replace(/<p>Chargement des annonces\.\.\.<\/p>/, grilleHtml);
+  let html = templateHtml.replace(/<p>Chargement des annonces\.\.\.<\/p>/, grilleHtml);
+  if (!biens.length && permettreNoindex) {
+    html = html.replace("<head>", `<head>\n<meta name="robots" content="noindex,follow">`);
+  }
   if (biens.length) {
     // data-ssr-itemlist : signal au JS client pour ne pas injecter un 2e ItemList en doublon
-    return html.replace("</head>", `<script type="application/ld+json" data-ssr-itemlist>${jsonLdItemList(biens, canonicalUrl)}</script>\n</head>`);
+    html = html.replace("</head>", `<script type="application/ld+json" data-ssr-itemlist>${jsonLdItemList(biens, canonicalUrl)}</script>\n</head>`);
   }
   return html;
 }
@@ -413,7 +422,7 @@ app.get("/annonces.html", async (req, res) => {
     const template = await lireAsset("annonces.html");
     if (template === null) return envoyer404(res);
     res.set("Cache-Control", "public, max-age=300");
-    res.send(rendreGrilleTemplate(template, biens, "https://sakeurimmo.com/annonces.html"));
+    res.send(rendreGrilleTemplate(template, biens, "https://sakeurimmo.com/annonces.html", false));
   } catch (e) {
     console.error("Erreur SSR annonces.html :", e);
     res.status(500).send("Erreur serveur.");
@@ -494,6 +503,13 @@ app.get("/sitemap.xml", async (req, res) => {
   try {
     const biens = await db.all("SELECT id, titre, cree_le FROM biens WHERE statut = 'publie' ORDER BY cree_le DESC");
     const aujourdHui = new Date().toISOString().slice(0, 10);
+    // Catégorie/ville sans annonce réelle = page noindex (voir rendreGrilleTemplate) → ne
+    // doit pas non plus apparaître dans le sitemap (signal contradictoire sinon). Comptes
+    // recalculés à chaque requête : une page ressort d'elle-même dès sa 1re vraie annonce.
+    const parType = await db.all("SELECT type_bien, COUNT(*) AS n FROM biens WHERE statut = 'publie' GROUP BY type_bien");
+    const parVille = await db.all("SELECT ville, COUNT(*) AS n FROM biens WHERE statut = 'publie' GROUP BY ville");
+    const nbParType = Object.fromEntries(parType.map((r) => [r.type_bien, r.n]));
+    const nbParVille = Object.fromEntries(parVille.map((r) => [r.ville, r.n]));
     const categories = [
       "terrains-a-vendre",
       "appartements-a-vendre",
@@ -508,11 +524,13 @@ app.get("/sitemap.xml", async (req, res) => {
       "commerces-a-louer",
       "immeubles-a-vendre",
       "immeubles-a-louer",
-    ].map((slug) => ({
-      loc: `https://sakeurimmo.com/categorie/${slug}.html`,
-      lastmod: aujourdHui,
-      prio: "0.8",
-    }));
+    ]
+      .filter((slug) => nbParType[CATEGORIES_SLUG_TYPE[slug]] > 0)
+      .map((slug) => ({
+        loc: `https://sakeurimmo.com/categorie/${slug}.html`,
+        lastmod: aujourdHui,
+        prio: "0.8",
+      }));
     const villes = [
       "immobilier-a-dakar",
       "immobilier-a-thies",
@@ -522,11 +540,15 @@ app.get("/sitemap.xml", async (req, res) => {
       "immobilier-a-mbour",
       "immobilier-a-ziguinchor",
       "immobilier-a-kaolack",
-    ].map((slug) => ({
-      loc: `https://sakeurimmo.com/villes/${slug}.html`,
-      lastmod: aujourdHui,
-      prio: "0.8",
-    }));
+    ]
+      // ville stockée en LIKE côté listerBiensPublies (ex. "Saly Portudal" doit matcher "Saly") :
+      // même logique ici, une correspondance partielle suffit à garder la page indexée.
+      .filter((slug) => Object.keys(nbParVille).some((v) => v.includes(VILLES_SLUG_NOM[slug])))
+      .map((slug) => ({
+        loc: `https://sakeurimmo.com/villes/${slug}.html`,
+        lastmod: aujourdHui,
+        prio: "0.8",
+      }));
     const blog = [
       "terrain-a-vendre-pognene-thies",
       "terrain-a-vendre-zac-thies",
