@@ -23,6 +23,14 @@
     { "pattern": "sakeurimmo.com", "custom_domain": true },
     { "pattern": "www.sakeurimmo.com", "custom_domain": true }
   ],
+  // Non secret — les vraies clés/tokens (Turso, Cloudinary, JWT_SECRET, PayPal, Brevo)
+  // se posent avec `wrangler secret put <NOM>`, jamais ici (fichier committé).
+  "vars": {
+    "NODE_ENV": "production",
+    "FRONTEND_URL": "https://sakeurimmo.com",
+    "FRAIS_MISE_EN_AVANT_FCFA": "2000",
+    "PAYPAL_SANDBOX": "false"
+  },
   "observability": {
     "enabled": true
   }
