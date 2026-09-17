@@ -16,6 +16,16 @@ const contactsRoutes = require("./routes/contacts.routes");
 
 const app = express();
 
+// www → apex (301) : tous les canonicals, le sitemap et robots.txt utilisent l'apex ;
+// sans ce redirect les deux hôtes servent 200 et Google voit des doublons d'hôte.
+app.use((req, res, next) => {
+  const hote = String(req.headers.host || "").toLowerCase().trim();
+  if (hote === "www.sakeurimmo.com") {
+    return res.redirect(301, `https://sakeurimmo.com${req.originalUrl}`);
+  }
+  next();
+});
+
 // Lit un fichier de frontend/ : sur Cloudflare Workers, fs n'a pas accès aux fichiers
 // du binding assets (ASSETS) — il faut passer par son API fetch() ; en Node classique
 // (local/dev), fs fonctionne normalement. Renvoie null si le fichier n'existe pas.
@@ -619,6 +629,26 @@ app.get("/annonce/:slugId", async (req, res) => {
     console.error("Erreur fiche annonce :", e);
     res.status(500).send("Erreur serveur.");
   }
+});
+
+// Pages statiques .html (SEO) : sur Workers l'edge Static Assets sert ces fichiers en
+// "clean-links" (/x.html → 307 → /x) alors que canonical, sitemap et liens internes
+// utilisent la forme /x.html. Ce handler — atteint pour les chemins routés via
+// run_worker_first (wrangler.jsonc) — sert la forme .html en 200 direct et redirige la
+// forme sans extension vers elle (301) : URLs stables, cohérentes avec les signaux SEO.
+app.use(async (req, res, next) => {
+  if (req.method !== "GET" && req.method !== "HEAD") return next();
+  const chemin = req.path.slice(1);
+  if (chemin.endsWith(".html")) {
+    const html = await lireAsset(chemin);
+    if (html === null) return next();
+    return res.set("Cache-Control", "public, max-age=300").type("html").send(html);
+  }
+  const avecExtension = `${chemin}.html`;
+  if ((await lireAsset(avecExtension)) !== null) {
+    return res.redirect(301, `/${avecExtension}`);
+  }
+  next();
 });
 
 app.use((req, res) => {

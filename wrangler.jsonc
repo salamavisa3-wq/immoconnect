@@ -22,7 +22,19 @@
       "/villes/*",
       "/annonce/*",
       "/sitemap.xml",
-      "/api/*"
+      "/api/*",
+      // Pages statiques indexables (.html = forme canonique). Sans ça, le Asset Worker
+      // sert ces pages en clean-links : /x.html → 307 → /x, alors que canonical, sitemap
+      // et liens internes utilisent /x.html → URLs du sitemap non stables (voir server.js).
+      "/blog",
+      "/blog/*",
+      "/blog.html",
+      "/guides",
+      "/guides/*",
+      "/guides.html",
+      "/forfaits.html",
+      "/diaspora.html",
+      "/contact.html"
     ]
   },
   "routes": [
