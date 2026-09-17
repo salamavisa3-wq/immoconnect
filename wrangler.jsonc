@@ -18,6 +18,10 @@
     // images/autres pages) est servi directement par l'edge, sans invoquer le Worker.
     "run_worker_first": [
       "/annonces.html",
+      // Forme sans extension des pages indexables : le Worker la redirige 301 vers .html
+      // (même traitement que /blog → /blog.html), pour qu'aucune URL duplicate ne soit
+      // indexable hors canonical. Les deux formes sont routées Worker → pas de boucle.
+      "/annonces",
       "/categorie/*",
       "/villes/*",
       "/annonce/*",
@@ -33,8 +37,11 @@
       "/guides/*",
       "/guides.html",
       "/forfaits.html",
+      "/forfaits",
       "/diaspora.html",
-      "/contact.html"
+      "/diaspora",
+      "/contact.html",
+      "/contact"
     ]
   },
   "routes": [
