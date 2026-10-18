@@ -192,6 +192,7 @@ document.getElementById("form-inscription").addEventListener("submit", async (e)
   e.preventDefault();
   zoneErreur.innerHTML = "";
   const donnees = Object.fromEntries(new FormData(e.target));
+  try { const c = localStorage.getItem("sakeurimmo_c"); if (c) donnees.code_createur = c; } catch (_) {}
 
   try {
     const reponse = await appelApi("/auth/register", { method: "POST", body: JSON.stringify(donnees) });
