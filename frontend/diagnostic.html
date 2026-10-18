@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Diagnostic de ton annonce immobilière</title>
+<link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
+<link rel="stylesheet" href="/css/style.css">
+<style>
+  .dg { max-width: 460px; margin: 0 auto; padding: 24px 16px 40px; }
+  .dg h1 { font-family: var(--police-titre); color: var(--bleu-nuit); font-size: 1.9rem; line-height: 1.15; margin: 0 0 8px; }
+  .dg p.sub { color: var(--texte-clair); margin: 0 0 18px; }
+  .dg label { display: block; font-weight: 600; margin: 12px 0 4px; font-size: .9rem; }
+  .dg input, .dg select, .dg textarea {
+    width: 100%; padding: 12px; border: 1px solid var(--sable-fonce); border-radius: var(--rayon);
+    font: inherit; background: var(--blanc); color: var(--texte);
+  }
+  .dg textarea { min-height: 110px; resize: vertical; }
+  .dg .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dg button { width: 100%; margin-top: 18px; padding: 15px; border: 0; border-radius: var(--rayon);
+    background: var(--terre); color: var(--blanc); font: inherit; font-weight: 700; cursor: pointer; }
+  .dg button.sec { background: transparent; color: var(--texte-clair); font-weight: 600; margin-top: 6px; }
+  .dg .err { color: var(--rouge-alerte); font-size: .9rem; min-height: 1.2em; margin-top: 8px; }
+  .dg .carte { background: var(--blanc); border: 1px solid var(--sable-fonce); border-radius: var(--rayon);
+    padding: 16px; box-shadow: var(--ombre); margin-bottom: 14px; }
+  .dg .score { font-family: var(--police-titre); font-size: 3rem; line-height: 1; color: var(--terre); }
+  .dg .score small { font-size: 1rem; color: var(--texte-clair); }
+  .dg .flou { height: 14px; border-radius: 7px; background: var(--sable-fonce); margin: 10px 0; filter: blur(3px); }
+  .dg ul.pts { margin: 8px 0 0 18px; padding: 0; }
+  .dg ul.pts li { margin-bottom: 8px; }
+  .dg ul.pts b { color: var(--terre); }
+  .dg .ok { color: var(--vert-baobab); }
+  .dg .note { font-size: .8rem; color: var(--texte-clair); margin-top: 10px; }
+  .dg [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main class="dg">
+
+<!-- 1. Saisie -->
+<section id="v-saisie">
+  <h1>Ton annonce ne se vend pas&nbsp;? Découvre ce qui la freine.</h1>
+  <p class="sub">Remplis les infos de ton annonce. Score en 10&nbsp;secondes.</p>
+  <form id="f" novalidate>
+    <div class="duo">
+      <div><label for="type">Bien</label>
+        <select id="type"><option value="terrain">Terrain</option><option value="maison">Maison</option>
+          <option value="villa">Villa</option><option value="appartement">Appartement</option>
+          <option value="commerce">Commerce</option></select></div>
+      <div><label for="mode">Pour</label>
+        <select id="mode"><option value="vente">Vente</option><option value="location">Location</option></select></div>
+    </div>
+    <label for="titre">Titre de l'annonce</label>
+    <input id="titre" type="text" maxlength="150" autocomplete="off">
+    <div class="duo">
+      <div><label for="lieu">Ville et quartier</label><input id="lieu" type="text" placeholder="Thiès, Cité Lamy"></div>
+      <div><label for="prix">Prix (FCFA)</label><input id="prix" type="number" inputmode="numeric" min="0"></div>
+    </div>
+    <div class="duo">
+      <div><label for="surface">Surface (m²)</label><input id="surface" type="number" inputmode="numeric" min="0"></div>
+      <div><label for="photos">Nombre de photos</label><input id="photos" type="number" inputmode="numeric" min="0" value="0"></div>
+    </div>
+    <label for="desc">Description</label>
+    <textarea id="desc" placeholder="Colle ici le texte de ton annonce"></textarea>
+    <div class="err" id="err"></div>
+    <button type="submit">Voir mon score</button>
+  </form>
+</section>
+
+<!-- 2. Résultat -->
+<section id="v-res" hidden>
+  <div class="carte">
+    <div class="score"><span id="sc">--</span><small> / 100</small></div>
+    <p id="resume" style="margin:8px 0 0"></p>
+  </div>
+
+  <div class="carte" id="verrou">
+    <b>Les points à corriger</b>
+    <div class="flou"></div><div class="flou" style="width:80%"></div><div class="flou" style="width:90%"></div>
+    <p class="note" style="margin-top:0">Débloque la liste détaillée avec un forfait de publication (dès 5&nbsp;000&nbsp;FCFA, paiement unique, Wave / Orange Money ou PayPal).</p>
+    <button id="pay" type="button">Débloquer mon diagnostic</button>
+  </div>
+
+  <div class="carte" id="detail" hidden>
+    <b>Les points à corriger</b>
+    <ul class="pts" id="liste"></ul>
+  </div>
+
+  <button class="sec" id="refaire" type="button">Modifier mon annonce</button>
+  <p class="note">Ce score évalue la complétude et la clarté de l'annonce. Il ne prédit pas une vente.</p>
+</section>
+</main>
+
+<script src="/js/api.js"></script>
+<script>
+/* Règles du score (100 pts). Calcul 100 % local : aucun envoi de l'annonce, aucune clé API.
+   Le détail (liste) n'est jamais écrit dans la page tant que le compte n'a pas de forfait actif. */
+const $ = id => document.getElementById(id);
+const CLE = "sakeurimmo_diag";
+
+function criteres(a) {
+  const vente = a.mode === "vente";
+  const d = a.desc.toLowerCase();
+  const papiers = vente
+    ? /titre foncier|\btf\b|bail|d[ée]lib[ée]ration|permis|acte de vente|certificat/.test(d)
+    : /bail|caution|[ée]tat des lieux|contrat/.test(d);
+  return [
+    { pts: 20, ok: a.photos >= 5, msg: "Ajoute au moins 5 photos (extérieur, pièces, accès). Peu de photos limitent la confiance." },
+    { pts: 15, ok: a.prix > 0, msg: "Indique un prix clair, sans « à débattre » seul." },
+    { pts: 10, ok: a.surface > 0, msg: "Précise la surface en m²." },
+    { pts: 10, ok: a.lieu.split(/[ ,]+/).filter(Boolean).length >= 2, msg: "Donne la ville ET le quartier." },
+    { pts: 15, ok: a.desc.length >= 300, msg: "Allonge la description (300 caractères minimum) : état du bien, accès, environnement." },
+    { pts: 15, ok: papiers, msg: vente ? "Mentionne le type de titre (titre foncier, bail, délibération…)." : "Précise les conditions : bail, caution, état des lieux." },
+    { pts: 10, ok: a.titre.length >= 20 && a.titre.length <= 80 && a.titre !== a.titre.toUpperCase(), msg: "Écris un titre de 20 à 80 caractères, pas tout en majuscules." },
+    { pts: 5, ok: /visite|contact|appel|whatsapp|joignable/.test(d), msg: "Dis comment te contacter ou organiser une visite." },
+  ];
+}
+
+function lire() {
+  return {
+    type: $("type").value, mode: $("mode").value, titre: $("titre").value.trim(),
+    lieu: $("lieu").value.trim(), prix: +$("prix").value || 0, surface: +$("surface").value || 0,
+    photos: +$("photos").value || 0, desc: $("desc").value.trim(),
+  };
+}
+
+function remplir(a) { for (const k in a) if ($(k)) $(k).value = a[k] || ""; }
+
+async function compteActif() {
+  if (!Session.estConnecte()) return false;
+  try { const r = await appelApi("/auth/moi"); return r.user && r.user.statut_compte === "actif"; }
+  catch (e) { return false; }
+}
+
+async function afficher(a) {
+  const cr = criteres(a);
+  const score = cr.reduce((s, c) => s + (c.ok ? c.pts : 0), 0);
+  const aCorriger = cr.filter(c => !c.ok);
+  $("sc").textContent = score;
+  $("resume").textContent = aCorriger.length === 0 ? "Ton annonce est complète." : aCorriger.length + " point(s) à corriger.";
+  $("v-saisie").hidden = true; $("v-res").hidden = false;
+  const actif = await compteActif();
+  $("verrou").hidden = actif || aCorriger.length === 0;
+  $("detail").hidden = !(actif && aCorriger.length);
+  if (actif && aCorriger.length) {
+    $("liste").innerHTML = "";
+    aCorriger.forEach(c => { const li = document.createElement("li"); li.textContent = c.msg + " (+" + c.pts + " pts)"; $("liste").appendChild(li); });
+  }
+}
+
+$("f").onsubmit = e => {
+  e.preventDefault();
+  const a = lire();
+  if (!a.desc && !a.titre) { $("err").textContent = "Remplis au moins le titre ou la description."; return; }
+  $("err").textContent = "";
+  try { localStorage.setItem(CLE, JSON.stringify(a)); } catch (x) {}
+  afficher(a);
+};
+$("refaire").onclick = () => { $("v-res").hidden = true; $("v-saisie").hidden = false; };
+$("pay").onclick = () => { location.href = "/inscription.html"; };
+
+/* Code créateur (?c=...) conservé pour l'attribution — non transmis au serveur pour l'instant. */
+try { const c = new URLSearchParams(location.search).get("c"); if (c) localStorage.setItem("sakeurimmo_c", c.slice(0, 40)); } catch (x) {}
+try { const s = JSON.parse(localStorage.getItem(CLE) || "null"); if (s) { remplir(s); afficher(s); } } catch (x) {}
+</script>
+</body>
+</html>

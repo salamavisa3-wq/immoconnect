@@ -26,6 +26,8 @@ function assainirUser(user) {
 // Il devra choisir un forfait et régler (voir /api/payments) avant de pouvoir publier.
 router.post("/register", async (req, res) => {
   const { nom_complet, email, telephone, ville, mot_de_passe } = req.body;
+  // Code créateur (attribution des vidéos) : on ne garde qu'un code alphanumérique court.
+  const code_createur = /^[A-Za-z0-9_-]{1,40}$/.test(req.body.code_createur || "") ? req.body.code_createur : null;
 
   if (!nom_complet || !email || !telephone || !mot_de_passe) {
     return res.status(400).json({ erreur: "Tous les champs obligatoires doivent être renseignés." });
@@ -42,9 +44,9 @@ router.post("/register", async (req, res) => {
   const hash = bcrypt.hashSync(mot_de_passe, 10);
 
   const info = await db.run(
-    `INSERT INTO users (nom_complet, email, telephone, ville, mot_de_passe, statut_compte)
-     VALUES (?, ?, ?, ?, ?, 'en_attente_paiement')`,
-    [nom_complet.trim(), email.toLowerCase().trim(), telephone.trim(), ville || null, hash]
+    `INSERT INTO users (nom_complet, email, telephone, ville, mot_de_passe, statut_compte, code_createur)
+     VALUES (?, ?, ?, ?, ?, 'en_attente_paiement', ?)`,
+    [nom_complet.trim(), email.toLowerCase().trim(), telephone.trim(), ville || null, hash, code_createur]
   );
 
   const user = await db.get("SELECT * FROM users WHERE id = ?", [info.lastInsertRowid]);
