@@ -1,0 +1,28 @@
+name: Relances paiements
+
+# Chaque matin (08:00 UTC = heure de Dakar), demande à l'API d'envoyer à l'admin le digest
+# des paiements à relancer (liens WhatsApp prêts). Sans secret CRON_SECRET, le job se
+# termine proprement sans rien faire : aucun échec tant que la configuration n'est pas posée.
+on:
+  schedule:
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Déclencher le digest
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::notice::Secret CRON_SECRET absent côté GitHub : digest ignoré."
+            exit 0
+          fi
+          code=$(curl -s -o response.json -w "%{http_code}" --max-time 30 -X POST \
+            -H "Authorization: Bearer $CRON_SECRET" \
+            https://sakeurimmo.com/api/relances/cron/digest)
+          echo "HTTP $code"
+          cat response.json
+          [ "$code" = "200" ]

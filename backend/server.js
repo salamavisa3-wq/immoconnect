@@ -12,6 +12,7 @@ const { getEnv, estSurWorkers } = require("./cf-context");
 const authRoutes = require("./routes/auth.routes");
 const paymentsRoutes = require("./routes/payments.routes");
 const adminRoutes = require("./routes/admin.routes");
+const relancesRoutes = require("./routes/relances.routes");
 const biensRoutes = require("./routes/biens.routes");
 const contactsRoutes = require("./routes/contacts.routes");
 
@@ -613,6 +614,7 @@ app.get("/sitemap.xml", async (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/payments", paymentsRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/relances", relancesRoutes);
 app.use("/api/biens", biensRoutes);
 app.use("/api/contacts", contactsRoutes);
 
