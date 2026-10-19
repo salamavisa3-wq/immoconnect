@@ -122,6 +122,9 @@ CREATE INDEX IF NOT EXISTS idx_contacts_bien ON contacts(bien_id);
   // Grand-fathering : les anciens comptes actifs (modèle "illimité") gardent le plafond
   // maximum au lieu d'être bloqués à 0 place après la migration. Idempotent.
   try { await exec("UPDATE users SET quota_annonces = 15 WHERE statut_compte = 'actif' AND quota_annonces = 0;"); } catch (_) {}
+  // Relances de paiement (voir relances.js).
+  try { await exec("ALTER TABLE paiements ADD COLUMN relance_le TEXT;"); } catch (_) {}
+  try { await exec("ALTER TABLE paiements ADD COLUMN nb_relances INTEGER NOT NULL DEFAULT 0;"); } catch (_) {}
 }
 
 // Initialisation paresseuse : Cloudflare Workers interdit toute I/O asynchrone en

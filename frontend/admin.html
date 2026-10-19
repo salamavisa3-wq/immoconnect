@@ -45,6 +45,14 @@
 
 <section class="section">
   <div class="conteneur">
+    <h2>Relances de paiement</h2>
+    <p class="aide">Paiements lancés mais non terminés, et paiements déclarés depuis plus de 24 h. Le bouton ouvre WhatsApp avec le message prêt ; cliquez ensuite « Relancé » pour ne pas le renvoyer avant 48 h (2 relances maximum).</p>
+    <div id="liste-relances">Chargement...</div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="conteneur">
     <h2>Annonces en attente de validation</h2>
     <div id="liste-attente">Chargement...</div>
   </div>
@@ -238,9 +246,56 @@ document.querySelectorAll("#choix-periode button").forEach((b) => {
   b.addEventListener("click", () => chargerStats(Number(b.dataset.jours)));
 });
 
+function tableRelances(titre, lignes) {
+  if (lignes.length === 0) return "";
+  return `
+    <h3 style="margin-top:20px;">${titre} (${lignes.length})</h3>
+    <table class="table-biens">
+      <thead><tr><th>Depuis</th><th>Propriétaire</th><th>Montant</th><th>Référence</th><th>Relances</th><th>Actions</th></tr></thead>
+      <tbody>
+        ${lignes.map((l) => `
+          <tr>
+            <td>${echapper((l.depuis || "").replace("T", " "))}</td>
+            <td>${echapper(l.nom_complet)}<br><span class="aide">${echapper(l.telephone)}</span></td>
+            <td>${formaterPrix(l.montant)}</td>
+            <td><code>${echapper(l.reference)}</code></td>
+            <td>${l.nb_relances}</td>
+            <td style="display:flex;gap:8px;">
+              ${l.whatsapp_url
+                ? `<a class="bouton bouton-primaire" style="padding:6px 12px;font-size:0.8rem;" href="${echapper(l.whatsapp_url)}" target="_blank" rel="noopener">WhatsApp</a>`
+                : `<span class="aide">numéro invalide</span>`}
+              <button class="bouton bouton-fantome" style="padding:6px 12px;font-size:0.8rem;" onclick="marquerRelance('${echapper(l.reference)}')">Relancé</button>
+            </td>
+          </tr>`).join("")}
+      </tbody>
+    </table>`;
+}
+
+async function chargerRelances() {
+  const zone = document.getElementById("liste-relances");
+  try {
+    const r = await appelApi("/relances/a-relancer");
+    zone.innerHTML = r.abandons.length + r.a_verifier.length === 0
+      ? `<p style="color:var(--texte-clair);">Aucune relance à faire.</p>`
+      : tableRelances("Paiements lancés, non terminés", r.abandons) + tableRelances("Déclarés, à rapprocher", r.a_verifier);
+  } catch (err) {
+    zone.innerHTML = `<p style="color:var(--rouge-alerte);">${echapper(err.message)}</p>`;
+  }
+}
+
+async function marquerRelance(reference) {
+  try {
+    await appelApi(`/relances/${encodeURIComponent(reference)}/marquer`, { method: "POST" });
+    chargerRelances();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
 charger();
 chargerPaiements();
 chargerStats(30);
+chargerRelances();
 </script>
 
 <script src="/js/menu.js"></script>
