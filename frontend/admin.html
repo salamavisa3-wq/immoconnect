@@ -19,6 +19,20 @@
   </div>
 </header>
 
+<section class="section" id="section-stats">
+  <div class="conteneur">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+      <h2 style="margin:0;">Tableau de bord</h2>
+      <div id="choix-periode" style="display:flex;gap:8px;">
+        <button class="bouton bouton-fantome" data-jours="7" style="padding:6px 12px;font-size:0.8rem;">7 jours</button>
+        <button class="bouton bouton-fantome" data-jours="30" style="padding:6px 12px;font-size:0.8rem;">30 jours</button>
+        <button class="bouton bouton-fantome" data-jours="90" style="padding:6px 12px;font-size:0.8rem;">90 jours</button>
+      </div>
+    </div>
+    <div id="stats" style="margin-top:20px;">Chargement...</div>
+  </div>
+</section>
+
 <section class="section">
   <div class="conteneur">
     <h2>Paiements par QR à vérifier</h2>
@@ -155,8 +169,78 @@ document.getElementById("btn-test-mail").addEventListener("click", async (e) => 
   e.target.disabled = false;
 });
 
+const echapper = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const LIBELLES_TYPE_PAIEMENT = { inscription: "Forfaits & abonnements", mise_en_avant: "Mises en avant" };
+
+function barreEntonnoir(libelle, valeur, total, pourcent) {
+  const largeur = total > 0 ? Math.max(2, Math.round((valeur / total) * 100)) : 0;
+  return `
+    <div style="margin-bottom:10px;">
+      <div style="display:flex;justify-content:space-between;font-size:0.85rem;"><span>${libelle}</span><strong>${valeur} · ${pourcent} %</strong></div>
+      <div style="background:var(--sable-fonce);border-radius:6px;height:10px;"><div style="width:${largeur}%;height:10px;border-radius:6px;background:var(--or);"></div></div>
+    </div>`;
+}
+
+async function chargerStats(jours) {
+  const zone = document.getElementById("stats");
+  document.querySelectorAll("#choix-periode button").forEach((b) => {
+    b.classList.toggle("bouton-primaire", Number(b.dataset.jours) === jours);
+    b.classList.toggle("bouton-fantome", Number(b.dataset.jours) !== jours);
+  });
+  try {
+    const s = await appelApi(`/admin/stats?jours=${jours}`);
+    const e = s.entonnoir;
+    zone.innerHTML = `
+      <div class="grille-stats">
+        <div class="carte-stat"><div class="valeur">${e.inscrits}</div><div class="label">Inscriptions (${s.periode_jours} j)</div></div>
+        <div class="carte-stat"><div class="valeur">${e.declare}</div><div class="label">Paiements déclarés (${e.taux_declare} % des inscrits)</div></div>
+        <div class="carte-stat"><div class="valeur">${e.valide}</div><div class="label">Paiements validés (${e.taux_valide} % des inscrits)</div></div>
+        <div class="carte-stat"><div class="valeur">${formaterPrix(s.revenus.valide)}</div><div class="label">Revenu validé</div></div>
+      </div>
+      <div class="grille-stats">
+        <div class="carte-stat"><div class="valeur">${formaterPrix(s.revenus.declare_non_verifie)}</div><div class="label">Déclaré, pas encore vérifié</div></div>
+        <div class="carte-stat"><div class="valeur">${s.a_valider.nb}</div><div class="label">À valider (${s.a_valider.plus_de_24h} depuis plus de 24 h)</div></div>
+        <div class="carte-stat"><div class="valeur">${s.paniers_abandonnes.nb}</div><div class="label">Paiements abandonnés (${formaterPrix(s.paniers_abandonnes.montant)})</div></div>
+        <div class="carte-stat"><div class="valeur">${s.totaux.contacts_periode}</div><div class="label">Demandes de contact (${s.periode_jours} j)</div></div>
+      </div>
+      <div class="grille-stats">
+        <div class="carte-stat"><div class="valeur">${s.totaux.actifs} / ${s.totaux.proprietaires}</div><div class="label">Propriétaires actifs</div></div>
+        <div class="carte-stat"><div class="valeur">${s.totaux.annonces_publiees}</div><div class="label">Annonces publiées</div></div>
+        <div class="carte-stat"><div class="valeur">${s.totaux.annonces_en_attente}</div><div class="label">Annonces en attente</div></div>
+        <div class="carte-stat"><div class="valeur">${s.totaux.vues}</div><div class="label">Vues cumulées</div></div>
+      </div>
+      <h3>Entonnoir d'inscription</h3>
+      <p class="aide" style="margin-bottom:12px;">Parmi les propriétaires inscrits sur la période, part ayant lancé, déclaré puis fait valider un paiement d'inscription.</p>
+      ${barreEntonnoir("Inscrits", e.inscrits, e.inscrits, e.inscrits ? 100 : 0)}
+      ${barreEntonnoir("Paiement lancé", e.initie, e.inscrits, e.taux_initie)}
+      ${barreEntonnoir("Paiement déclaré", e.declare, e.inscrits, e.taux_declare)}
+      ${barreEntonnoir("Paiement validé", e.valide, e.inscrits, e.taux_valide)}
+      <h3 style="margin-top:28px;">Revenus par type</h3>
+      ${s.revenus.par_type.length === 0 ? `<p class="aide">Aucun paiement sur la période.</p>` : `
+      <table class="table-biens"><thead><tr><th>Type</th><th>Validés</th><th>Montant validé</th><th>Déclarés</th><th>Montant déclaré</th></tr></thead><tbody>
+        ${s.revenus.par_type.map((t) => `<tr><td>${echapper(LIBELLES_TYPE_PAIEMENT[t.type] || t.type)}</td><td>${t.nb_valides}</td><td>${formaterPrix(t.valide)}</td><td>${t.nb_declares}</td><td>${formaterPrix(t.declare)}</td></tr>`).join("")}
+      </tbody></table>`}
+      <h3 style="margin-top:28px;">Canaux d'acquisition</h3>
+      <p class="aide" style="margin-bottom:12px;">Attribution par le paramètre <code>?c=</code> du lien d'inscription ; « direct » = sans code.</p>
+      <table class="table-biens"><thead><tr><th>Canal</th><th>Inscrits</th><th>Payeurs</th><th>Conversion</th><th>Revenu validé</th></tr></thead><tbody>
+        ${s.canaux.length === 0 ? `<tr><td colspan="5">Aucune inscription sur la période.</td></tr>` : s.canaux.map((c) => `<tr><td>${echapper(c.canal)}</td><td>${c.inscrits}</td><td>${c.payeurs}</td><td>${c.taux} %</td><td>${formaterPrix(c.valide)}</td></tr>`).join("")}
+      </tbody></table>
+      <h3 style="margin-top:28px;">Par jour</h3>
+      <table class="table-biens"><thead><tr><th>Jour</th><th>Inscriptions</th><th>Revenu validé</th></tr></thead><tbody>
+        ${s.par_jour.length === 0 ? `<tr><td colspan="3">Aucune activité sur la période.</td></tr>` : s.par_jour.slice(0, 31).map((j) => `<tr><td>${echapper(j.jour)}</td><td>${j.inscrits}</td><td>${formaterPrix(j.valide)}</td></tr>`).join("")}
+      </tbody></table>`;
+  } catch (err) {
+    zone.innerHTML = `<p style="color:var(--rouge-alerte);">${echapper(err.message)}</p>`;
+  }
+}
+
+document.querySelectorAll("#choix-periode button").forEach((b) => {
+  b.addEventListener("click", () => chargerStats(Number(b.dataset.jours)));
+});
+
 charger();
 chargerPaiements();
+chargerStats(30);
 </script>
 
 <script src="/js/menu.js"></script>
