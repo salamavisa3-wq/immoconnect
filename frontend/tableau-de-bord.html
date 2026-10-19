@@ -172,12 +172,12 @@ async function chargerProfil() {
     if (user.statut_compte !== "actif") {
       banniere.innerHTML = `
         <div class="message-erreur" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-          <span>Votre compte n'est pas encore actif. Choisissez un forfait (5 000, 10 000 ou 15 000 FCFA) pour activer votre compte et publier vos annonces.</span>
+          <span>Votre compte n'est pas encore actif. Choisissez un forfait (dès 5 000 FCFA, ou l'abonnement Agence 30 000 FCFA / mois) pour activer votre compte et publier vos annonces.</span>
           <a href="inscription.html" class="bouton bouton-primaire" style="padding:8px 16px;">Choisir un forfait</a>
         </div>`;
       document.getElementById("btn-soumettre-annonce").disabled = true;
     } else if (paramPaiement === "mea_succes") {
-      banniere.innerHTML = `<div class="message-succes">★ Mise en avant activée ! Votre annonce apparaît maintenant en tête des résultats pendant 7 jours.</div>`;
+      banniere.innerHTML = `<div class="message-succes">★ Mise en avant activée ! Votre annonce apparaît maintenant en tête des résultats.</div>`;
     } else if (paramPaiement === "succes") {
       banniere.innerHTML = `<div class="message-succes">Compte activé avec succès ! Vous pouvez maintenant publier des annonces.</div>`;
     } else {
@@ -212,10 +212,12 @@ function majPlacesRestantes() {
   }
 }
 
-async function initierMiseEnAvant(bienId) {
-  if (!confirm("Mettre ce bien en avant pendant 7 jours pour 2 000 FCFA ?\nIl apparaîtra en tête des résultats avec un badge \"Coup de cœur\".\nVous serez redirigé vers le paiement Wave / Orange Money (vérification manuelle sous 24 h ouvrées).")) return;
+let boosts = [];
+
+async function initierMiseEnAvant(bienId, jours, prix) {
+  if (!confirm(`Mettre ce bien en avant pendant ${jours} jours pour ${Number(prix).toLocaleString("fr-FR")} FCFA ?\nIl apparaîtra en tête des résultats avec un badge "Coup de cœur".\nVous serez redirigé vers le paiement Wave / Orange Money (vérification manuelle sous 24 h ouvrées).`)) return;
   try {
-    const data = await appelApi(`/payments/initier-mise-en-avant/${bienId}`, { method: "POST" });
+    const data = await appelApi(`/payments/initier-mise-en-avant/${bienId}`, { method: "POST", body: JSON.stringify({ jours }) });
     if (data.url_paiement) window.location.href = data.url_paiement;
   } catch (err) {
     alert("Erreur : " + err.message);
@@ -226,6 +228,7 @@ async function chargerMesAnnonces() {
   const corps = document.getElementById("corps-table-biens");
   try {
     const biens = await appelApi("/biens/moi/liste");
+    boosts = (await appelApi("/payments/forfaits")).boosts || [];
 
     document.getElementById("stat-total").textContent = biens.length;
     document.getElementById("stat-publie").textContent = biens.filter(b => b.statut === "publie").length;
@@ -249,7 +252,7 @@ async function chargerMesAnnonces() {
         const dateExp = new Date(b.mise_en_avant_jusqu_au).toLocaleDateString("fr-FR");
         cellMEA = `<span class="etiquette etiquette-attente" style="font-size:0.72rem;white-space:nowrap;">★ jusqu'au ${dateExp}</span>`;
       } else if (b.statut === "publie") {
-        cellMEA = `<button class="bouton bouton-or" style="padding:5px 10px;font-size:0.78rem;line-height:1.3;" onclick="initierMiseEnAvant(${b.id})">★ Mettre en avant<br><small style="font-weight:400;">2 000 FCFA / 7j</small></button>`;
+        cellMEA = `<div style="display:flex;flex-direction:column;gap:4px;">${boosts.map((o) => `<button class="bouton bouton-or" style="padding:4px 10px;font-size:0.74rem;line-height:1.3;white-space:nowrap;" onclick="initierMiseEnAvant(${b.id}, ${o.jours}, ${o.prix})">★ ${o.jours} j · ${Number(o.prix).toLocaleString("fr-FR")} FCFA</button>`).join("")}</div>`;
       } else {
         cellMEA = `<span style="color:var(--texte-clair);font-size:0.8rem;">—</span>`;
       }

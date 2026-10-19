@@ -16,14 +16,12 @@
 const express = require("express");
 const { v4: uuidv4 } = require("uuid");
 const db = require("../db");
-const { FORFAITS } = require("../forfaits");
+const { FORFAITS, BOOSTS } = require("../forfaits");
 const { authRequis, adminRequis } = require("../middleware/auth");
 const { envoyerEmailAdmin, echapper } = require("../mail");
 const paypal = require("../paypal");
 
 const router = express.Router();
-
-const MONTANT_MISE_EN_AVANT  = Number(process.env.FRAIS_MISE_EN_AVANT_FCFA  || 2000);
 
 // PayPal est disponible seulement si les clés API sont renseignées (sandbox ou live).
 const paypalConfigure = () => Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET);
@@ -50,7 +48,7 @@ const QR_PAIEMENT = {
 
 // GET /api/payments/forfaits — liste des formules d'abonnement (public, page d'inscription)
 router.get("/forfaits", (req, res) => {
-  res.json({ forfaits: FORFAITS });
+  res.json({ forfaits: FORFAITS, boosts: BOOSTS });
 });
 
 // GET /api/payments/config — moyens de paiement disponibles (public, page d'inscription).
@@ -148,10 +146,24 @@ async function crediterInscription(paiement) {
   // Le "+" couvre à la fois la 1ʳᵉ activation (0 + N) et l'ajout de places (upgrade).
   const forfait = FORFAITS.find((f) => f.prix === Number(paiement.montant));
   const places = forfait ? forfait.annonces : 0;
-  await db.run(
-    "UPDATE users SET statut_compte = 'actif', quota_annonces = quota_annonces + ? WHERE id = ?",
-    [places, paiement.user_id]
-  );
+  if (forfait && forfait.mensuel) {
+    // Abonnement Agence : les places comptent dans quota_annonces tant que l'abonnement
+    // court (authRequis les retire à l'échéance). Renouveler avant l'échéance ajoute la
+    // durée sans recréditer les places (écart 0).
+    await db.run(
+      `UPDATE users SET statut_compte = 'actif',
+              quota_annonces = quota_annonces + (? - abonnement_annonces),
+              abonnement_annonces = ?,
+              abonnement_jusqu_au = datetime(MAX(COALESCE(abonnement_jusqu_au, datetime('now')), datetime('now')), ?)
+        WHERE id = ?`,
+      [places, places, `+${forfait.jours} days`, paiement.user_id]
+    );
+  } else {
+    await db.run(
+      "UPDATE users SET statut_compte = 'actif', quota_annonces = quota_annonces + ? WHERE id = ?",
+      [places, paiement.user_id]
+    );
+  }
   await db.run("UPDATE paiements SET places_creditees = 1 WHERE reference = ?", [paiement.reference]);
 }
 
@@ -168,9 +180,11 @@ async function confirmerPaiement(reference, moyenPaiement) {
     // Ne crédite que si la déclaration ne l'a pas déjà fait (idempotent).
     await crediterInscription(paiement);
   } else if (paiement.type === "mise_en_avant" && paiement.bien_id) {
+    // Durée déduite du montant payé ; 7 jours si le tarif a changé depuis l'initiation.
+    const boost = BOOSTS.find((b) => b.prix === Number(paiement.montant));
     await db.run(
-      "UPDATE biens SET mise_en_avant = 1, mise_en_avant_jusqu_au = datetime('now', '+7 days') WHERE id = ?",
-      [paiement.bien_id]
+      "UPDATE biens SET mise_en_avant = 1, mise_en_avant_jusqu_au = datetime('now', ?) WHERE id = ?",
+      [`+${boost ? boost.jours : 7} days`, paiement.bien_id]
     );
   }
 }
@@ -178,6 +192,10 @@ async function confirmerPaiement(reference, moyenPaiement) {
 // POST /api/payments/initier-mise-en-avant/:bien_id — démarre le paiement de mise en avant (2000 FCFA / 7 jours)
 router.post("/initier-mise-en-avant/:bien_id", authRequis, async (req, res) => {
   const bienId = Number(req.params.bien_id);
+  const boost = BOOSTS.find((b) => b.jours === Number(req.body.jours || 7));
+  if (!boost) {
+    return res.status(400).json({ erreur: `Durée invalide (${BOOSTS.map((b) => b.jours).join(", ")} jours).` });
+  }
 
   const bien = await db.get("SELECT * FROM biens WHERE id = ? AND user_id = ?", [bienId, req.user.id]);
   if (!bien) return res.status(404).json({ erreur: "Annonce introuvable." });
@@ -207,9 +225,9 @@ router.post("/initier-mise-en-avant/:bien_id", authRequis, async (req, res) => {
         userId: req.user.id,
         bienId,
         reference,
-        montant: MONTANT_MISE_EN_AVANT,
+        montant: boost.prix,
         type: "mise_en_avant",
-        description: `SakeurImmo — mise en avant de l'annonce #${bienId} (7 jours)`,
+        description: `SakeurImmo — mise en avant de l'annonce #${bienId} (${boost.jours} jours)`,
       });
       return res.json(data);
     } catch (e) {
@@ -221,14 +239,14 @@ router.post("/initier-mise-en-avant/:bien_id", authRequis, async (req, res) => {
   await db.run(
     `INSERT INTO paiements (user_id, bien_id, reference, montant, type, statut)
      VALUES (?, ?, ?, ?, 'mise_en_avant', 'initie')`,
-    [req.user.id, bienId, reference, MONTANT_MISE_EN_AVANT]
+    [req.user.id, bienId, reference, boost.prix]
   );
 
   // Paiement par QR : Wave / Orange Money, circuit manuel.
   res.json({
     mode: "qr",
     reference,
-    montant: MONTANT_MISE_EN_AVANT,
+    montant: boost.prix,
     url_paiement: `/paiement-qr.html?reference=${encodeURIComponent(reference)}`,
   });
 });
@@ -352,7 +370,7 @@ function notifierDeclaration(user, paiement, moyen, transactionId) {
   const operateur = moyen === "orange_money_qr" ? "Orange Money" : "Wave";
   const forfait = FORFAITS.find((f) => f.prix === Number(paiement.montant));
   const objet = paiement.type === "inscription"
-    ? `Inscription — ${forfait ? `${forfait.annonces} annonces (${forfait.prix} FCFA)` : `${paiement.montant} FCFA`}`
+    ? `Inscription — ${forfait ? `${forfait.annonces} annonces${forfait.mensuel ? " / mois (Agence)" : ""} (${forfait.prix} FCFA)` : `${paiement.montant} FCFA`}`
     : `Mise en avant (annonce #${paiement.bien_id})`;
 
   envoyerEmailAdmin({
@@ -437,6 +455,10 @@ router.post("/admin/:reference/rejeter", authRequis, adminRequis, async (req, re
       const quota = Math.max(0, (utilisateur.quota_annonces || 0) - places);
       const statut = quota === 0 ? "en_attente_paiement" : utilisateur.statut_compte;
       await db.run("UPDATE users SET quota_annonces = ?, statut_compte = ? WHERE id = ?", [quota, statut, paiement.user_id]);
+      // Abonnement Agence : retirer aussi l'abonnement (places déjà soustraites ci-dessus).
+      if (forfait && forfait.mensuel) {
+        await db.run("UPDATE users SET abonnement_annonces = 0, abonnement_jusqu_au = NULL WHERE id = ?", [paiement.user_id]);
+      }
     }
   }
 

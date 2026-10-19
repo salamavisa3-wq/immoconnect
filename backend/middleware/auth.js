@@ -13,8 +13,17 @@ async function authRequis(req, res, next) {
 
   try {
     const payload = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await db.get("SELECT * FROM users WHERE id = ?", [payload.id]);
+    let user = await db.get("SELECT * FROM users WHERE id = ?", [payload.id]);
     if (!user) return res.status(401).json({ erreur: "Utilisateur introuvable." });
+    // Abonnement Agence échu : retirer ses places (les annonces déjà en ligne restent,
+    // seules les nouvelles publications sont bloquées au-delà du quota restant).
+    if (user.abonnement_annonces > 0 && user.abonnement_jusqu_au && user.abonnement_jusqu_au <= new Date().toISOString().slice(0, 19).replace("T", " ")) {
+      await db.run(
+        "UPDATE users SET quota_annonces = MAX(0, quota_annonces - abonnement_annonces), abonnement_annonces = 0 WHERE id = ? AND abonnement_annonces > 0",
+        [user.id]
+      );
+      user = await db.get("SELECT * FROM users WHERE id = ?", [user.id]);
+    }
     req.user = user;
     next();
   } catch (e) {

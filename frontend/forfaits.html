@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Forfaits &amp; tarifs immobilier au Sénégal — SakeurImmo</title>
-<meta name="description" content="Publiez vos annonces immobilières au Sénégal : forfaits dès 5 000 FCFA pour 5, 10 ou 15 annonces actives. Paiement QR Wave / Orange Money ou PayPal, compte activé immédiatement.">
+<meta name="description" content="Publiez vos annonces immobilières au Sénégal : forfaits dès 5 000 FCFA pour 5, 10 ou 15 annonces actives, abonnement Agence 30 000 FCFA/mois pour 50 annonces, mise en avant dès 2 000 FCFA. Paiement QR Wave / Orange Money ou PayPal, compte activé immédiatement.">
 <link rel="canonical" href="https://sakeurimmo.com/forfaits.html">
 
 <meta property="og:type" content="website">
@@ -44,13 +44,43 @@
       "offers": {
         "@type": "AggregateOffer",
         "lowPrice": "5000",
-        "highPrice": "15000",
+        "highPrice": "30000",
         "priceCurrency": "XOF",
-        "offerCount": "3",
+        "offerCount": "4",
         "offers": [
           { "@type": "Offer", "name": "Forfait 5 000 FCFA", "price": "5000", "priceCurrency": "XOF", "itemOffered": { "@type": "Service", "name": "5 annonces actives" } },
           { "@type": "Offer", "name": "Forfait 10 000 FCFA", "price": "10000", "priceCurrency": "XOF", "itemOffered": { "@type": "Service", "name": "10 annonces actives" } },
-          { "@type": "Offer", "name": "Forfait 15 000 FCFA", "price": "15000", "priceCurrency": "XOF", "itemOffered": { "@type": "Service", "name": "15 annonces actives" } }
+          { "@type": "Offer", "name": "Forfait 15 000 FCFA", "price": "15000", "priceCurrency": "XOF", "itemOffered": { "@type": "Service", "name": "15 annonces actives" } },
+          {
+            "@type": "Offer",
+            "name": "Abonnement Agence 30 000 FCFA / mois",
+            "price": "30000",
+            "priceCurrency": "XOF",
+            "priceSpecification": { "@type": "UnitPriceSpecification", "price": "30000", "priceCurrency": "XOF", "billingDuration": 1, "unitCode": "MON" },
+            "itemOffered": { "@type": "Service", "name": "50 annonces actives pendant 30 jours, renouvelable" }
+          }
+        ]
+      }
+    },
+    {
+      "@type": "Service",
+      "@id": "https://sakeurimmo.com/forfaits.html#mise-en-avant",
+      "name": "Mise en avant d'une annonce immobilière",
+      "serviceType": "Annonce à la une",
+      "description": "Votre annonce apparaît en tête des résultats SakeurImmo avec le badge « Coup de cœur » pendant 7, 15 ou 30 jours.",
+      "provider": { "@id": "https://sakeurimmo.com/#organization" },
+      "url": "https://sakeurimmo.com/forfaits.html#mise-en-avant",
+      "areaServed": { "@type": "Country", "name": "Sénégal" },
+      "offers": {
+        "@type": "AggregateOffer",
+        "lowPrice": "2000",
+        "highPrice": "6000",
+        "priceCurrency": "XOF",
+        "offerCount": "3",
+        "offers": [
+          { "@type": "Offer", "name": "Mise en avant 7 jours", "price": "2000", "priceCurrency": "XOF", "itemOffered": { "@type": "Service", "name": "Annonce à la une pendant 7 jours" } },
+          { "@type": "Offer", "name": "Mise en avant 15 jours", "price": "3500", "priceCurrency": "XOF", "itemOffered": { "@type": "Service", "name": "Annonce à la une pendant 15 jours" } },
+          { "@type": "Offer", "name": "Mise en avant 30 jours", "price": "6000", "priceCurrency": "XOF", "itemOffered": { "@type": "Service", "name": "Annonce à la une pendant 30 jours" } }
         ]
       }
     },
@@ -69,7 +99,7 @@
         {
           "@type": "Question",
           "name": "Combien coûte la publication d'une annonce immobilière au Sénégal ?",
-          "acceptedAnswer": { "@type": "Answer", "text": "La publication se fait par forfait : 5 000 FCFA pour 5 annonces actives, 10 000 FCFA pour 10 annonces et 15 000 FCFA pour 15 annonces. Le paiement active immédiatement votre compte." }
+          "acceptedAnswer": { "@type": "Answer", "text": "La publication se fait par forfait : 5 000 FCFA pour 5 annonces actives, 10 000 FCFA pour 10 annonces et 15 000 FCFA pour 15 annonces (paiement unique). Les agences et professionnels peuvent choisir l'abonnement Agence : 30 000 FCFA par mois pour 50 annonces actives. Le paiement active immédiatement votre compte." }
         },
         {
           "@type": "Question",
@@ -84,7 +114,17 @@
         {
           "@type": "Question",
           "name": "Puis-je publier des annonces illimitées ?",
-          "acceptedAnswer": { "@type": "Answer", "text": "Non. Chaque forfait donne droit à un nombre d'annonces actives : 5, 10 ou 15. Vous pouvez choisir un forfait supérieur à tout moment." }
+          "acceptedAnswer": { "@type": "Answer", "text": "Non. Chaque forfait donne droit à un nombre d'annonces actives : 5, 10 ou 15 en paiement unique, ou 50 avec l'abonnement Agence (30 jours, renouvelable). Vous pouvez choisir un forfait supérieur à tout moment." }
+        },
+        {
+          "@type": "Question",
+          "name": "Comment mettre mon annonce en avant ?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Depuis votre tableau de bord, choisissez la durée de mise en avant d'une annonce publiée : 2 000 FCFA pour 7 jours, 3 500 FCFA pour 15 jours ou 6 000 FCFA pour 30 jours. L'annonce apparaît en tête des résultats avec le badge « Coup de cœur »." }
+        },
+        {
+          "@type": "Question",
+          "name": "Que se passe-t-il à la fin de l'abonnement Agence ?",
+          "acceptedAnswer": { "@type": "Answer", "text": "Vos annonces déjà en ligne restent visibles, mais vous ne pouvez plus en publier de nouvelles au-delà des places de votre forfait tant que l'abonnement n'est pas renouvelé. Renouveler avant l'échéance ajoute 30 jours à la durée restante." }
         }
       ]
     }
@@ -136,6 +176,23 @@
         <p>Le tarif le plus avantageux par annonce.</p>
         <a href="/inscription.html" class="bouton bouton-primaire" style="margin-top:14px;">Choisir ce forfait</a>
       </div>
+      <div class="type-carte">
+        <div class="num">04</div>
+        <h4>30 000 FCFA / mois</h4>
+        <p style="font-weight:600;color:var(--terre);margin:4px 0 8px;">50 annonces actives</p>
+        <p>Abonnement Agence pour les professionnels : renouvelable chaque mois, sans engagement.</p>
+        <a href="/inscription.html" class="bouton bouton-primaire" style="margin-top:14px;">Choisir l'abonnement Agence</a>
+      </div>
+    </div>
+
+    <div class="section-tete" style="margin-top:50px;" id="mise-en-avant">
+      <h2>Mettre une annonce en avant</h2>
+    </div>
+    <p style="color:var(--texte-clair);max-width:760px;">Placez une annonce publiée en tête des résultats avec le badge « Coup de cœur », depuis votre tableau de bord.</p>
+    <div class="grille-types">
+      <div class="type-carte"><div class="num">7 j</div><h4>2 000 FCFA</h4><p>Idéal pour relancer une annonce récente.</p></div>
+      <div class="type-carte"><div class="num">15 j</div><h4>3 500 FCFA</h4><p>Deux semaines de visibilité maximale.</p></div>
+      <div class="type-carte"><div class="num">30 j</div><h4>6 000 FCFA</h4><p>Le meilleur tarif par jour pour vendre ou louer plus vite.</p></div>
     </div>
 
     <div class="section-tete" style="margin-top:50px;">
@@ -152,6 +209,7 @@
         <div class="montant">Forfait <span>à partir de</span></div>
         <ul>
           <li>5 000 FCFA pour 5 annonces actives</li>
+          <li>Agences : 30 000 FCFA / mois pour 50 annonces actives</li>
           <li>Compte activé automatiquement après paiement</li>
           <li>Paiement QR Wave / Orange Money ou PayPal</li>
         </ul>
