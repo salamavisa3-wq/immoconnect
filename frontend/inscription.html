@@ -8,7 +8,7 @@
 <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
 <link rel="stylesheet" href="css/style.css">
 <style>
-  .grille-forfaits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+  .grille-forfaits { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin-bottom: 22px; }
   .carte-forfait {
     border: 2px solid var(--sable-fonce); border-radius: var(--rayon);
     padding: 20px 16px; text-align: center; cursor: pointer; background: var(--blanc);
@@ -38,7 +38,7 @@
 
 <div class="carte-formulaire" id="carte-etape-1">
   <h2 class="mt-0">Créer votre compte propriétaire</h2>
-  <p class="aide" style="margin-bottom:22px;">Étape 1/2 — Vos informations. L'étape suivante est le choix de votre forfait (5 000, 10 000 ou 15 000 FCFA).</p>
+  <p class="aide" style="margin-bottom:22px;">Étape 1/2 — Vos informations. L'étape suivante est le choix de votre forfait (dès 5 000 FCFA, ou l'abonnement Agence à 30 000 FCFA / mois).</p>
 
   <div id="zone-erreur"></div>
 
@@ -144,10 +144,10 @@ async function chargerForfaits() {
       return;
     }
     grille.innerHTML = forfaits.map((f, i) => `
-      <div class="carte-forfait" data-index="${i}" role="button" tabindex="0" aria-label="Forfait ${f.prix} FCFA pour ${f.annonces} annonces">
-        <div class="prix">${Number(f.prix).toLocaleString("fr-FR")} <span>FCFA</span></div>
+      <div class="carte-forfait" data-index="${i}" role="button" tabindex="0" aria-label="Forfait ${f.prix} FCFA pour ${f.annonces} annonces${f.mensuel ? " par mois" : ""}">
+        <div class="prix">${Number(f.prix).toLocaleString("fr-FR")} <span>FCFA${f.mensuel ? " / mois" : ""}</span></div>
         <div class="annonces">${f.annonces} annonces</div>
-        <div class="badge">${i === 0 ? "Dès l'inscription" : "Plus de places"}</div>
+        <div class="badge">${f.mensuel ? "Abonnement Agence" : i === 0 ? "Dès l'inscription" : "Plus de places"}</div>
       </div>`).join("");
 
     grille.querySelectorAll(".carte-forfait").forEach((carte) => {

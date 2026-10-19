@@ -9,6 +9,9 @@ Chaque forfait donne droit à un nombre d'annonces actives. Le paiement est effe
 - Forfait 5 000 FCFA : 5 annonces actives.
 - Forfait 10 000 FCFA : 10 annonces actives.
 - Forfait 15 000 FCFA : 15 annonces actives.
+- Abonnement Agence 30 000 FCFA par mois : 50 annonces actives pendant 30 jours, renouvelable.
+
+Mise en avant d'une annonce publiée (en tête des résultats, badge « Coup de cœur ») : 2 000 FCFA pour 7 jours, 3 500 FCFA pour 15 jours, 6 000 FCFA pour 30 jours.
 
 Pour publier : créer un compte propriétaire sur https://sakeurimmo.com/inscription.html, choisir un forfait, payer, puis déposer ses annonces (photos, prix, superficie, chambres, quartier).
 
