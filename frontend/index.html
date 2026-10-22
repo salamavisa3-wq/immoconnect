@@ -26,16 +26,194 @@
 <link rel="alternate" type="text/plain" href="/llms.txt">
 <link rel="stylesheet" href="css/style.css">
 <style>
-  .grille-formules { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
-  .carte-formule { background: var(--blanc); border: 1px solid var(--sable-fonce); border-radius: var(--rayon); padding: 26px 22px; text-align: center; transition: border-color .15s, transform .15s; }
-  .carte-formule:hover { border-color: var(--terre); transform: translateY(-3px); }
-  .carte-formule .prix { font-family: var(--police-titre); font-size: 2.1rem; color: var(--terre); }
-  .carte-formule .prix span { font-size: 1rem; font-weight: 500; opacity: .85; }
-  .carte-formule .annonces { font-weight: 700; color: var(--bleu-nuit); margin: 6px 0 14px; }
-  .carte-formule ul { list-style: none; padding: 0; margin: 0 0 18px; font-size: .86rem; color: var(--texte-clair); text-align: left; }
-  .carte-formule li { padding: 3px 0; }
-  .carte-formule li::before { content: "✓ "; color: var(--vert-baobab); }
-  @media (max-width: 720px) { .grille-formules { grid-template-columns: 1fr; } }
+
+  /* ===== Accueil — styles propres à la page (préfixe acc-) ===== */
+  .acc-sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px solid var(--or); outline-offset: 2px; }
+
+  /* Hero */
+  .acc-hero { position:relative; background: var(--bleu-nuit); color: var(--sable); padding: 72px 0 96px; overflow:hidden; isolation:isolate; }
+  .acc-hero::before { content:""; position:absolute; inset:0; z-index:-1;
+    background:
+      radial-gradient(ellipse 60% 70% at 85% 10%, rgba(200,155,60,.20), transparent 60%),
+      radial-gradient(ellipse 50% 60% at 0% 100%, rgba(181,84,31,.18), transparent 60%),
+      repeating-linear-gradient(90deg, rgba(243,236,219,.035) 0 1px, transparent 1px 96px),
+      repeating-linear-gradient(0deg, rgba(243,236,219,.035) 0 1px, transparent 1px 96px); }
+  .acc-hero-grille { display:grid; grid-template-columns: minmax(0,1.15fr) minmax(0,.85fr); gap: 64px; align-items:center; }
+  .acc-hero h1 { font-size: clamp(2.5rem, 5.2vw, 4.4rem); line-height:1.03; letter-spacing:-.02em; font-weight:500; color:var(--blanc); max-width: 14ch; margin:0 0 22px; }
+  .acc-lead { font-size:1.1rem; line-height:1.6; color: rgba(243,236,219,.8); max-width: 50ch; margin:0 0 34px; }
+
+  .acc-recherche { background: var(--sable); color: var(--texte); border-radius: 10px; padding: 8px; display:grid; grid-template-columns: 1.1fr 1.1fr auto; gap: 6px; box-shadow: 0 24px 48px rgba(0,0,0,.35); max-width: 640px; }
+  .acc-recherche label { display:block; padding: 10px 14px 8px; border-radius: 6px; cursor:text; }
+  .acc-recherche label:focus-within { background: var(--blanc); }
+  .acc-recherche label span { display:block; font-size:.74rem; font-weight:600; color: var(--texte-clair); margin-bottom:2px; }
+  .acc-recherche input, .acc-recherche select { width:100%; border:0; background:transparent; font: 500 1rem var(--police-corps); color: var(--texte); padding:2px 0; outline:none; text-overflow:ellipsis; }
+  .acc-recherche select { cursor:pointer; }
+  .acc-recherche label + label { border-left: 1px solid var(--sable-fonce); border-radius: 0 6px 6px 0; }
+  .acc-recherche button { border:0; border-radius: 6px; background: var(--terre); color:#fff; font: 600 1rem var(--police-corps); padding: 0 28px; cursor:pointer; transition: background .15s; }
+  .acc-recherche button:hover { background: var(--terre-clair); }
+  .acc-raccourcis { display:flex; flex-wrap:wrap; gap:8px 10px; margin-top:18px; font-size:.88rem; color: rgba(243,236,219,.6); align-items:center; }
+  .acc-raccourcis a { padding:5px 13px; border:1px solid rgba(243,236,219,.22); border-radius:999px; color: rgba(243,236,219,.9); transition: border-color .15s, color .15s; }
+  .acc-raccourcis a:hover { border-color: var(--or); color: var(--or); }
+
+  /* Fiches du hero */
+  .acc-vitrine { display:flex; flex-direction:column; gap:20px; }
+  .acc-fiche { display:block; background: var(--sable); color: var(--texte); border-radius: 10px; overflow:hidden; box-shadow: 0 30px 60px rgba(0,0,0,.45); }
+  .acc-fiche-1 { align-self:flex-end; width: 82%; }
+  .acc-fiche-2 { align-self:flex-start; width: 56%; transform: rotate(-2deg); }
+  .acc-fiche .photo { aspect-ratio: 4/3; background: var(--bleu-nuit-clair); overflow:hidden; }
+  .acc-fiche .photo img { width:100%; height:100%; object-fit:cover; }
+  .acc-fiche .infos { padding: 14px 18px 18px; }
+  .acc-fiche .ref { font-family: var(--police-mono); font-size:.7rem; color: var(--texte-clair); }
+  .acc-fiche .titre { font-family: var(--police-titre); font-size:1.02rem; font-weight:600; line-height:1.25; margin: 4px 0 8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .acc-fiche .prix { font-family: var(--police-titre); font-size:1.45rem; color: var(--terre); font-weight:600; }
+  .acc-fiche-2 .titre { font-size:.9rem; }
+  .acc-fiche-2 .prix { font-size:1.15rem; }
+  .acc-sceau { position:absolute; top:14px; left:14px; width:62px; height:62px; border-radius:50%; background: rgba(243,236,219,.94); border:2px solid var(--terre); color: var(--terre); display:flex; align-items:center; justify-content:center; font-family: var(--police-titre); font-weight:700; font-size:.78rem; text-align:center; line-height:1.1; transform: rotate(-9deg); box-shadow: 0 0 0 4px rgba(243,236,219,.4); }
+  .acc-vide { background: var(--bleu-nuit-clair); }
+  .acc-vitrine-vide { display:none; }
+
+  /* Entrée du hero : une seule séquence au chargement */
+  @keyframes acc-entree { from { opacity:0; transform: translateY(18px); } to { opacity:1; transform:none; } }
+  .acc-fiche-1 { animation: acc-entree .8s .15s both cubic-bezier(.2,.7,.2,1); }
+  .acc-fiche-2 { animation: acc-entree .8s .35s both cubic-bezier(.2,.7,.2,1); }
+  @media (prefers-reduced-motion: reduce) { .acc-fiche-1, .acc-fiche-2 { animation:none; } html { scroll-behavior:auto; } }
+
+  /* Bandeau de confiance */
+  .acc-garanties { background: var(--sable-fonce); border-bottom: 1px solid rgba(37,31,23,.08); }
+  .acc-garanties ul { list-style:none; margin:0; padding: 26px 0; display:grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+  .acc-garanties li { display:flex; gap:14px; align-items:flex-start; }
+  .acc-garanties svg { flex:none; width:30px; height:30px; color: var(--terre); }
+  .acc-garanties strong { display:block; font-size:.98rem; line-height:1.3; }
+  .acc-garanties span { display:block; margin-top:2px; font-size:.84rem; line-height:1.4; color: var(--texte-clair); }
+
+  /* Sections */
+  .acc-bloc { padding: 92px 0; }
+  .acc-tete { display:flex; justify-content:space-between; align-items:flex-end; gap: 24px; margin-bottom: 40px; flex-wrap:wrap; }
+  .acc-tete h2 { font-size: clamp(1.9rem, 3.4vw, 2.7rem); font-weight:500; letter-spacing:-.015em; line-height:1.1; margin:0; max-width: 20ch; }
+  .acc-tete p { margin: 10px 0 0; color: var(--texte-clair); max-width: 52ch; }
+  .acc-tete .voir { font-weight:600; color: var(--terre); border-bottom: 2px solid currentColor; padding-bottom:2px; white-space:nowrap; }
+  .acc-tete .voir:hover { color: var(--bleu-nuit); }
+
+  /* Annonces récentes */
+  .acc-annonces { display:grid; grid-template-columns: repeat(3, 1fr); gap: 28px 24px; }
+  .acc-carte { display:block; }
+  .acc-carte .photo { position:relative; aspect-ratio: 4/3; border-radius: 8px; overflow:hidden; background: var(--sable-fonce); }
+  .acc-carte .photo img { width:100%; height:100%; object-fit:cover; transition: transform .5s cubic-bezier(.2,.7,.2,1); }
+  .acc-carte:hover .photo img { transform: scale(1.05); }
+  .acc-carte .etiq { position:absolute; left:12px; top:12px; background: var(--bleu-nuit); color: var(--sable); font-size:.76rem; font-weight:600; padding:5px 11px; border-radius:999px; }
+  .acc-carte .prix { font-family: var(--police-titre); font-size:1.55rem; font-weight:600; color: var(--bleu-nuit); margin: 14px 0 2px; }
+  .acc-carte h3 { font-family: var(--police-corps); font-size:.98rem; font-weight:500; line-height:1.4; margin:0 0 8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .acc-carte:hover h3 { text-decoration: underline; text-underline-offset: 3px; }
+  .acc-carte .meta { display:flex; flex-wrap:wrap; gap:4px 14px; font-size:.85rem; color: var(--texte-clair); }
+  .acc-carte .meta span { display:inline-flex; align-items:center; gap:5px; }
+  .acc-carte .meta svg { width:14px; height:14px; }
+  .acc-squelette .photo { animation: acc-pulse 1.4s infinite ease-in-out; }
+  .acc-squelette .ligne { height:14px; border-radius:4px; background: var(--sable-fonce); margin-top:12px; animation: acc-pulse 1.4s infinite ease-in-out; }
+  .acc-squelette .ligne.court { width:55%; }
+  @keyframes acc-pulse { 50% { opacity:.45; } }
+  @media (prefers-reduced-motion: reduce) { .acc-squelette .photo, .acc-squelette .ligne { animation:none; } .acc-carte .photo img { transition:none; } }
+
+  /* Villes */
+  .acc-villes-fond { background: var(--bleu-nuit); color: var(--sable); }
+  .acc-villes-fond .acc-tete p { color: rgba(243,236,219,.7); }
+  .acc-villes-fond .acc-tete .voir { color: var(--or); }
+  .acc-villes { display:grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .acc-ville { position:relative; display:flex; flex-direction:column; justify-content:flex-end; min-height: 190px; padding: 24px; border-radius: 10px; overflow:hidden; background: linear-gradient(160deg, var(--bleu-nuit-clair), #14233b); border: 1px solid rgba(243,236,219,.1); transition: border-color .2s, transform .2s; }
+  .acc-ville::after { content:""; position:absolute; right:-40px; top:-40px; width:150px; height:150px; border-radius:50%; border:1px dashed rgba(200,155,60,.35); transition: transform .4s; }
+  .acc-ville:hover { border-color: var(--or); transform: translateY(-3px); }
+  .acc-ville:hover::after { transform: scale(1.25); }
+  .acc-ville strong { font-family: var(--police-titre); font-size:1.75rem; font-weight:500; line-height:1.1; }
+  .acc-ville span { margin-top:6px; font-size:.88rem; color: rgba(243,236,219,.7); }
+  .acc-ville .nb { color: var(--or); font-weight:600; }
+
+  /* Catégories */
+  .acc-cats { display:grid; grid-template-columns: 1fr 1fr; gap: 0 72px; }
+  .acc-cats h3 { font-size:1.35rem; font-weight:600; margin: 0 0 8px; padding-bottom: 14px; border-bottom: 2px solid var(--bleu-nuit); }
+  .acc-cats ul { list-style:none; margin:0; padding:0; }
+  .acc-cats li a { display:flex; align-items:baseline; justify-content:space-between; gap:16px; padding: 15px 4px; border-bottom: 1px solid var(--sable-fonce); transition: padding .2s, color .15s; }
+  .acc-cats li a:hover { padding-left: 12px; color: var(--terre); }
+  .acc-cats li strong { font-weight:600; }
+  .acc-cats li small { color: var(--texte-clair); font-size:.84rem; text-align:right; }
+
+  /* Étapes */
+  .acc-etapes-fond { background: var(--bleu-nuit); color: var(--sable); }
+  .acc-etapes-fond .acc-tete p { color: rgba(243,236,219,.7); }
+  .acc-etapes { list-style:none; margin:0; padding:0; display:grid; grid-template-columns: repeat(3,1fr); gap: 40px; counter-reset: e; }
+  .acc-etapes li { position:relative; padding-top: 28px; border-top: 1px solid rgba(243,236,219,.25); counter-increment: e; }
+  .acc-etapes li::before { content: counter(e); position:absolute; top:-21px; left:0; width:42px; height:42px; border-radius:50%; background: var(--or); color: var(--bleu-nuit); display:flex; align-items:center; justify-content:center; font-family: var(--police-titre); font-weight:700; font-size:1.2rem; }
+  .acc-etapes h3 { font-size:1.35rem; font-weight:500; margin-bottom:8px; }
+  .acc-etapes p { margin:0; color: rgba(243,236,219,.72); max-width: 34ch; }
+
+  /* Diaspora */
+  .acc-diaspora { background: var(--terre); color:#fff; border-radius: 14px; padding: 52px 56px; display:grid; grid-template-columns: 1.4fr auto; gap: 32px; align-items:center; }
+  .acc-diaspora h2 { font-size: clamp(1.7rem, 3vw, 2.4rem); font-weight:500; line-height:1.12; margin:0 0 12px; max-width: 22ch; }
+  .acc-diaspora p { margin:0; max-width: 54ch; color: rgba(255,255,255,.88); }
+  .acc-diaspora .bouton { background: var(--sable); color: var(--bleu-nuit); padding: 14px 28px; }
+  .acc-diaspora .bouton:hover { background:#fff; }
+
+  /* Guides */
+  .acc-guides { list-style:none; margin:0; padding:0; display:grid; grid-template-columns: 1fr 1fr; gap: 0 72px; }
+  .acc-guides a { display:block; padding: 22px 4px; border-bottom: 1px solid var(--sable-fonce); }
+  .acc-guides h3 { font-size:1.2rem; font-weight:600; margin:0 0 6px; transition: color .15s; }
+  .acc-guides a:hover h3 { color: var(--terre); }
+  .acc-guides p { margin:0; color: var(--texte-clair); font-size:.93rem; }
+
+  /* Tarifs */
+  .acc-tarifs-fond { background: var(--sable-fonce); }
+  .acc-tarifs { display:grid; grid-template-columns: repeat(3,1fr); gap: 20px; align-items:stretch; }
+  .acc-plan { background: var(--blanc); border-radius: 12px; padding: 34px 30px; display:flex; flex-direction:column; border: 1px solid rgba(37,31,23,.08); }
+  .acc-plan .prix { font-family: var(--police-titre); font-size: 2.8rem; font-weight:500; line-height:1; color: var(--bleu-nuit); }
+  .acc-plan .prix small { font-size:1rem; font-weight:500; color: var(--texte-clair); margin-left:4px; }
+  .acc-plan .nb { margin: 10px 0 20px; font-weight:600; font-size:1.05rem; }
+  .acc-plan ul { list-style:none; margin:0 0 28px; padding:0; flex:1; font-size:.93rem; color: var(--texte-clair); }
+  .acc-plan li { padding: 6px 0 6px 26px; position:relative; }
+  .acc-plan li::before { content:""; position:absolute; left:0; top:11px; width:14px; height:8px; border-left:2.5px solid var(--vert-baobab); border-bottom:2.5px solid var(--vert-baobab); transform: rotate(-45deg) scale(.8); }
+  .acc-plan .bouton { justify-content:center; }
+  .acc-plan.fort { background: var(--bleu-nuit); color: var(--sable); border-color: var(--bleu-nuit); transform: translateY(-10px); box-shadow: 0 24px 48px rgba(16,27,45,.3); }
+  .acc-plan.fort .prix { color:#fff; }
+  .acc-plan.fort .prix small, .acc-plan.fort ul { color: rgba(243,236,219,.75); }
+  .acc-plan.fort .bouton { background: var(--terre); }
+  .acc-plan.fort .bouton:hover { background: var(--terre-clair); }
+  .acc-note-tarif { margin-top: 28px; text-align:center; color: var(--texte-clair); }
+  .acc-note-tarif a { color: var(--terre); font-weight:600; border-bottom: 1px solid currentColor; }
+
+  /* Appel final */
+  .acc-final { background: var(--bleu-nuit); color: var(--sable); padding: 84px 0; text-align:center; position:relative; overflow:hidden; }
+  .acc-final::before { content:""; position:absolute; inset:0; background: radial-gradient(ellipse 50% 80% at 50% 120%, rgba(200,155,60,.25), transparent 70%); }
+  .acc-final .conteneur { position:relative; }
+  .acc-final h2 { font-size: clamp(2rem, 4vw, 3.1rem); font-weight:500; letter-spacing:-.015em; max-width: 20ch; margin: 0 auto 14px; color:#fff; }
+  .acc-final p { color: rgba(243,236,219,.75); margin: 0 auto 32px; max-width: 48ch; }
+  .acc-final .actions { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+  .acc-final .bouton { padding: 14px 30px; font-size:1rem; }
+
+  /* Responsive */
+  @media (max-width: 960px) {
+    .acc-hero { padding: 48px 0 64px; }
+    .acc-hero-grille { grid-template-columns: 1fr; gap: 44px; }
+    .acc-vitrine { min-height: 0; display:grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .acc-fiche { position:static; width:auto; transform:none !important; }
+    .acc-garanties ul { grid-template-columns: 1fr 1fr; }
+    .acc-annonces { grid-template-columns: 1fr 1fr; }
+    .acc-villes { grid-template-columns: 1fr 1fr; }
+    .acc-cats, .acc-guides { grid-template-columns: 1fr; gap: 32px 0; }
+    .acc-guides { gap:0; }
+    .acc-etapes { grid-template-columns: 1fr; gap: 44px; }
+    .acc-tarifs { grid-template-columns: 1fr; }
+    .acc-plan.fort { transform:none; }
+    .acc-diaspora { grid-template-columns: 1fr; padding: 40px 30px; }
+    .acc-bloc { padding: 64px 0; }
+  }
+  @media (max-width: 600px) {
+    .acc-recherche { grid-template-columns: 1fr; }
+    .acc-recherche label + label { border-left:0; border-top:1px solid var(--sable-fonce); border-radius:0 0 6px 6px; }
+    .acc-recherche button { padding: 15px; }
+    .acc-vitrine { grid-template-columns: 1fr; }
+    .acc-fiche-2 { display:none; }
+    .acc-garanties ul { grid-template-columns: 1fr; gap:18px; padding:22px 0; }
+    .acc-annonces, .acc-villes { grid-template-columns: 1fr; }
+    .acc-ville { min-height: 130px; }
+  }
 </style>
 </head>
 <body>
@@ -56,158 +234,227 @@
   </div>
 </header>
 
-<section class="hero">
-  <div class="conteneur hero-grille">
+<main>
+<section class="acc-hero">
+  <div class="conteneur acc-hero-grille">
     <div>
-      <div class="eyebrow">Plateforme immobilière — Sénégal</div>
-      <h1>Publiez votre bien immobilier au Sénégal, <em>touchez les bons acheteurs</em>, sans intermédiaire.</h1>
-      <p class="lead">Terrains, appartements, maisons, villas — à vendre ou à louer. Créez votre compte propriétaire, choisissez un forfait dès 5 000 FCFA, et publiez vos annonces directement.</p>
-      <div class="hero-actions">
-        <a href="inscription.html" class="bouton bouton-primaire">Devenir propriétaire vendeur</a>
-        <a href="annonces.html" class="bouton bouton-fantome">Parcourir les annonces</a>
+      <h1>Achetez, louez ou vendez au Sénégal, sans intermédiaire.</h1>
+      <p class="acc-lead">Terrains, villas, appartements et locaux publiés directement par leurs propriétaires. Comparez les prix, contactez le vendeur, sans commission d'agence.</p>
+
+      <form class="acc-recherche" action="annonces.html" method="get" role="search">
+        <label><span>Où ?</span><input type="text" name="ville" placeholder="Dakar, Thiès, Saly…" autocomplete="off"></label>
+        <label><span>Quel bien ?</span>
+          <select name="type" aria-label="Type de bien">
+            <option value="">Tous les biens</option>
+            <option value="terrain">Terrain à vendre</option>
+            <option value="villa_vente">Villa à vendre</option>
+            <option value="maison_vente">Maison à vendre</option>
+            <option value="appartement_vente">Appartement à vendre</option>
+            <option value="immeuble_vente">Immeuble à vendre</option>
+            <option value="commerce_vente">Commerce à vendre</option>
+            <option value="appartement_location">Appartement à louer</option>
+            <option value="appartement_meuble">Appartement meublé</option>
+            <option value="maison_location">Maison à louer</option>
+            <option value="villa_location">Villa à louer</option>
+            <option value="commerce_location">Commerce à louer</option>
+            <option value="terrain_location">Terrain à louer</option>
+            <option value="immeuble_location">Immeuble à louer</option>
+          </select>
+        </label>
+        <button type="submit">Rechercher</button>
+      </form>
+
+      <div class="acc-raccourcis">
+        <span>Populaire :</span>
+        <a href="/villes/immobilier-a-thies.html">Thiès</a>
+        <a href="/villes/immobilier-a-dakar.html">Dakar</a>
+        <a href="/villes/immobilier-a-saly.html">Saly</a>
+        <a href="/categorie/terrains-a-vendre.html">Terrains à vendre</a>
+        <a href="/categorie/villas-a-vendre.html">Villas</a>
       </div>
-      <p class="hero-note">Paiement par Orange Money ou Wave.</p>
     </div>
 
-    <div class="cachet-carte" id="cachet-carte">
-      <div class="cachet-entete">
-        <div>
-          <div class="cachet-ref">Dernière annonce</div>
-          <h4 style="margin:6px 0 0;">Chargement…</h4>
-        </div>
-        <div class="sceau">IMMO</div>
-      </div>
-      <div class="prix">—</div>
-      <ul class="cachet-liste">
-        <li><span>Superficie</span><span>—</span></li>
-        <li><span>Chambres</span><span>—</span></li>
-        <li><span>Transaction</span><span>—</span></li>
-        <li><span>Statut</span><span style="color:var(--vert-baobab)">Publiée</span></li>
-      </ul>
+    <div class="acc-vitrine" id="vitrine" aria-label="Dernières annonces publiées">
+      <div class="acc-fiche acc-fiche-1 acc-vide"><div class="photo"></div><div class="infos"><div class="ref">&nbsp;</div><div class="titre">&nbsp;</div><div class="prix">&nbsp;</div></div></div>
     </div>
   </div>
 </section>
 
-<section class="section" id="categories">
+<div class="acc-garanties">
   <div class="conteneur">
-    <div class="section-tete">
-      <h2>Catégories populaires au Sénégal</h2>
-      <p>Choisissez un type de bien : les propriétaires publient directement leurs annonces immobilières.</p>
+    <ul>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 4.5-3.2 8.3-8 9-4.8-.7-8-4.5-8-9V6l8-3z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg><div><strong>Annonces validées</strong><span>Chaque annonce est relue par notre équipe sous 24 h.</span></div></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12l9-9 9 9"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg><div><strong>Propriétaires directs</strong><span>Vous échangez avec le vendeur, sans intermédiaire.</span></div></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12l-8 8-9-9V3h8l9 9z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><div><strong>Sans commission</strong><span>Aucun pourcentage prélevé sur la vente.</span></div></li>
+      <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg><div><strong>Wave &amp; Orange Money</strong><span>Publiez dès 5 000 FCFA, compte activé après paiement.</span></div></li>
+    </ul>
+  </div>
+</div>
+
+<section class="acc-bloc" id="annonces-recentes">
+  <div class="conteneur">
+    <div class="acc-tete">
+      <div>
+        <h2>Les dernières annonces</h2>
+        <p>Des biens réels, publiés par leurs propriétaires à Thiès, Dakar, Saly et partout au Sénégal.</p>
+      </div>
+      <a class="voir" href="annonces.html" id="voir-toutes">Voir toutes les annonces</a>
     </div>
-    <div class="grille-types">
-      <a href="/categorie/terrains-a-vendre.html" class="type-carte"><div class="num">01</div><h4>Terrains à vendre</h4><p>À usage d'habitation, commercial ou agricole.</p></a>
-      <a href="/categorie/appartements-a-vendre.html" class="type-carte"><div class="num">02</div><h4>Appartements à vendre</h4><p>Studios, F2, F3, F4 et plus.</p></a>
-      <a href="/categorie/appartements-a-louer.html" class="type-carte"><div class="num">03</div><h4>Appartements à louer</h4><p>Location longue durée, nue ou meublée.</p></a>
-      <a href="/categorie/appartements-meubles.html" class="type-carte"><div class="num">04</div><h4>Appartements meublés</h4><p>Prêts à vivre, idéal courte/moyenne durée.</p></a>
-      <a href="/categorie/maisons-a-vendre.html" class="type-carte"><div class="num">05</div><h4>Maisons à vendre</h4><p>Maisons individuelles, tous quartiers.</p></a>
-      <a href="/categorie/maisons-a-louer.html" class="type-carte"><div class="num">06</div><h4>Maisons à louer</h4><p>Familiales ou compactes, en ville.</p></a>
-      <a href="/categorie/villas-a-vendre.html" class="type-carte"><div class="num">07</div><h4>Villas à vendre</h4><p>Standing, résidentiel, balnéaire.</p></a>
-      <a href="/categorie/villas-a-louer.html" class="type-carte"><div class="num">08</div><h4>Villas à louer</h4><p>Séjour, événementiel, longue durée.</p></a>
-      <a href="/categorie/commerces-a-vendre.html" class="type-carte"><div class="num">09</div><h4>Commerces à vendre</h4><p>Boutiques, magasins et locaux d'activité.</p></a>
-      <a href="/categorie/commerces-a-louer.html" class="type-carte"><div class="num">10</div><h4>Commerces à louer</h4><p>Des locaux pour lancer votre activité.</p></a>
-      <a href="/categorie/terrains-a-louer.html" class="type-carte"><div class="num">11</div><h4>Terrains à louer</h4><p>Agricole, dépôt, projet d'activité.</p></a>
-      <a href="/categorie/immeubles-a-vendre.html" class="type-carte"><div class="num">12</div><h4>Immeubles à vendre</h4><p>Immeubles de rapport et investissements.</p></a>
-      <a href="/categorie/immeubles-a-louer.html" class="type-carte"><div class="num">13</div><h4>Immeubles à louer</h4><p>Bâtiments et locaux d'activité.</p></a>
+    <div class="acc-annonces" id="liste-recentes">
+      <div class="acc-carte acc-squelette"><div class="photo"></div><div class="ligne"></div><div class="ligne court"></div></div>
+      <div class="acc-carte acc-squelette"><div class="photo"></div><div class="ligne"></div><div class="ligne court"></div></div>
+      <div class="acc-carte acc-squelette"><div class="photo"></div><div class="ligne"></div><div class="ligne court"></div></div>
     </div>
   </div>
 </section>
 
-<section class="section section-sombre">
+<section class="acc-bloc acc-villes-fond">
   <div class="conteneur">
-    <div class="section-tete">
-      <h2>Trois étapes pour publier</h2>
-      <p>Aucune agence, aucun démarchage : vous gérez vos annonces vous-même.</p>
+    <div class="acc-tete">
+      <div>
+        <h2>Explorer par ville</h2>
+        <p>Prix, quartiers et annonces disponibles dans les principales villes du pays.</p>
+      </div>
+      <a class="voir" href="/guides/quartiers-investir-dakar-thies.html">Où investir : le guide des quartiers</a>
     </div>
-    <div class="grille-etapes">
-      <div class="etape">
-        <span class="chiffre">01</span>
-        <h4>Créez votre compte</h4>
-        <p>Renseignez vos informations en tant que propriétaire vendeur ou bailleur.</p>
+    <div class="acc-villes" id="villes">
+      <a class="acc-ville" href="/villes/immobilier-a-thies.html" data-ville="thies"><strong>Thiès</strong><span>Terrains, villas et immeubles <i class="nb"></i></span></a>
+      <a class="acc-ville" href="/villes/immobilier-a-dakar.html" data-ville="dakar"><strong>Dakar</strong><span>La capitale et sa banlieue <i class="nb"></i></span></a>
+      <a class="acc-ville" href="/villes/immobilier-a-saly.html" data-ville="saly"><strong>Saly</strong><span>Petite-Côte, résidences et villas <i class="nb"></i></span></a>
+      <a class="acc-ville" href="/villes/immobilier-a-mbour.html" data-ville="mbour"><strong>Mbour</strong><span>Ville portuaire en croissance <i class="nb"></i></span></a>
+      <a class="acc-ville" href="/villes/immobilier-a-kaolack.html" data-ville="kaolack"><strong>Kaolack</strong><span>Carrefour commercial du Sine-Saloum <i class="nb"></i></span></a>
+      <a class="acc-ville" href="/villes/immobilier-a-ziguinchor.html" data-ville="ziguinchor"><strong>Ziguinchor</strong><span>Casamance, foncier abordable <i class="nb"></i></span></a>
+    </div>
+  </div>
+</section>
+
+<section class="acc-bloc" id="categories">
+  <div class="conteneur">
+    <div class="acc-tete">
+      <div>
+        <h2>Que cherchez-vous&nbsp;?</h2>
+        <p>Choisissez un type de bien : les propriétaires publient directement leurs annonces immobilières.</p>
       </div>
-      <div class="etape">
-        <span class="chiffre">02</span>
-        <h4>Choisissez votre forfait</h4>
-        <p>5 000, 10 000 ou 15 000 FCFA selon votre nombre d'annonces, via Orange Money ou Wave.</p>
+    </div>
+    <div class="acc-cats">
+      <div>
+        <h3>Acheter</h3>
+        <ul>
+          <li><a href="/categorie/terrains-a-vendre.html"><strong>Terrains à vendre</strong><small>Habitation, commercial ou agricole</small></a></li>
+          <li><a href="/categorie/villas-a-vendre.html"><strong>Villas à vendre</strong><small>Standing, résidentiel, balnéaire</small></a></li>
+          <li><a href="/categorie/maisons-a-vendre.html"><strong>Maisons à vendre</strong><small>Maisons individuelles, tous quartiers</small></a></li>
+          <li><a href="/categorie/appartements-a-vendre.html"><strong>Appartements à vendre</strong><small>Studios, F2, F3, F4 et plus</small></a></li>
+          <li><a href="/categorie/immeubles-a-vendre.html"><strong>Immeubles à vendre</strong><small>Immeubles de rapport, investissement</small></a></li>
+          <li><a href="/categorie/commerces-a-vendre.html"><strong>Commerces à vendre</strong><small>Boutiques, magasins, locaux</small></a></li>
+        </ul>
       </div>
-      <div class="etape">
-        <span class="chiffre">03</span>
-        <h4>Publiez vos biens</h4>
-        <p>Ajoutez photos, prix et description. Notre équipe valide sous 24h.</p>
+      <div>
+        <h3>Louer</h3>
+        <ul>
+          <li><a href="/categorie/appartements-a-louer.html"><strong>Appartements à louer</strong><small>Longue durée, nus ou meublés</small></a></li>
+          <li><a href="/categorie/appartements-meubles.html"><strong>Appartements meublés</strong><small>Prêts à vivre, courte ou moyenne durée</small></a></li>
+          <li><a href="/categorie/maisons-a-louer.html"><strong>Maisons à louer</strong><small>Familiales ou compactes, en ville</small></a></li>
+          <li><a href="/categorie/villas-a-louer.html"><strong>Villas à louer</strong><small>Séjour, événementiel, longue durée</small></a></li>
+          <li><a href="/categorie/commerces-a-louer.html"><strong>Commerces à louer</strong><small>Des locaux pour lancer votre activité</small></a></li>
+          <li><a href="/categorie/terrains-a-louer.html"><strong>Terrains à louer</strong><small>Agricole, dépôt, projet d'activité</small></a></li>
+          <li><a href="/categorie/immeubles-a-louer.html"><strong>Immeubles à louer</strong><small>Bâtiments et locaux d'activité</small></a></li>
+        </ul>
       </div>
     </div>
   </div>
 </section>
 
-<section class="section" id="guides">
+<section class="acc-bloc acc-etapes-fond">
   <div class="conteneur">
-    <div class="section-tete">
-      <h2>Guides &amp; Conseils immobiliers au Sénégal</h2>
-      <p>Nos guides pratiques pour acheter, vendre, investir et louer en toute confiance.</p>
-      <p style="margin-top:16px;"><a href="/guides.html">Voir tous les guides, les villes et la diaspora →</a> · <a href="/blog.html">Blog immobilier par localité →</a></p>
+    <div class="acc-tete">
+      <div>
+        <h2>Vendez ou louez en trois étapes</h2>
+        <p>Aucune agence, aucun démarchage : vous gérez vos annonces vous-même.</p>
+      </div>
     </div>
-    <div class="grille-types">
-      <a href="/guides/acheter-un-terrain-au-senegal.html" class="type-carte">
-        <div class="num">01</div>
-        <h4>Acheter un terrain au Sénégal</h4>
-        <p>Documents, zones prisées et pièges à éviter pour réussir votre achat.</p>
-      </a>
-      <a href="/guides/vendre-son-bien-au-senegal.html" class="type-carte">
-        <div class="num">02</div>
-        <h4>Vendre son bien sans agence</h4>
-        <p>Prix, annonce et transaction : vendez sans commission d'agence.</p>
-      </a>
-      <a href="/guides/quartiers-investir-dakar-thies.html" class="type-carte">
-        <div class="num">03</div>
-        <h4>Les meilleurs quartiers pour investir</h4>
-        <p>Dakar, Thiès, Saly : comparez les zones selon votre objectif.</p>
-      </a>
-      <a href="/guides/louer-un-appartement-au-senegal.html" class="type-carte">
-        <div class="num">04</div>
-        <h4>Louer un appartement</h4>
-        <p>Bail, dépôt de garantie et conseils pour trouver le bon logement.</p>
-      </a>
-      <a href="/blog.html" class="type-carte">
-        <div class="num">05</div>
-        <h4>Blog par localité</h4>
-        <p>Pognène, ZAC de Thiès, Diakhaw, Mboro, Kédougou : le marché local décrypté.</p>
-      </a>
-      <a href="/diaspora.html" class="type-carte">
-        <div class="num">06</div>
-        <h4>Acheter depuis l'étranger (Diaspora)</h4>
-        <p>Procuration, notaire et transfert d'argent : achetez en toute sécurité à distance.</p>
-      </a>
+    <ol class="acc-etapes">
+      <li><h3>Créez votre compte</h3><p>Renseignez vos informations en tant que propriétaire vendeur ou bailleur.</p></li>
+      <li><h3>Choisissez votre forfait</h3><p>5 000, 10 000 ou 15 000 FCFA selon votre nombre d'annonces, via Orange Money ou Wave.</p></li>
+      <li><h3>Publiez vos biens</h3><p>Ajoutez photos, prix et description. Notre équipe valide sous 24&nbsp;h.</p></li>
+    </ol>
+  </div>
+</section>
+
+<section class="acc-bloc" style="padding-bottom:0;">
+  <div class="conteneur">
+    <div class="acc-diaspora">
+      <div>
+        <h2>Vous vivez à l'étranger&nbsp;? Achetez au pays, à distance.</h2>
+        <p>Procuration, notaire, transfert d'argent : le guide pour acheter un terrain ou une maison au Sénégal sans vous déplacer, et sans mauvaise surprise.</p>
+      </div>
+      <a href="/diaspora.html" class="bouton">Lire le guide diaspora</a>
     </div>
   </div>
 </section>
 
-<section class="section" id="tarif">
+<section class="acc-bloc" id="guides">
   <div class="conteneur">
-    <div class="section-tete">
-      <h2>Une formule pour chaque volume d'annonces</h2>
-      <p>Paiement par Orange Money / Wave : compte activé automatiquement après paiement. Une annonce supprimée ou refusée libère sa place.</p>
+    <div class="acc-tete">
+      <div>
+        <h2>Guides et conseils immobiliers au Sénégal</h2>
+        <p>Nos guides pratiques pour acheter, vendre, investir et louer en toute confiance.</p>
+      </div>
+      <a class="voir" href="/guides.html">Tous les guides</a>
     </div>
-    <div class="grille-formules">
-      <div class="carte-formule">
-        <div class="prix">5 000 <span>FCFA</span></div>
-        <div class="annonces">5 annonces</div>
-        <ul><li>Compte activé automatiquement après paiement</li><li>Annonces validées par notre équipe</li><li>Sans commission sur la vente</li></ul>
-        <a href="inscription.html" class="bouton bouton-secondaire">Choisir</a>
+    <ul class="acc-guides">
+      <li><a href="/guides/acheter-un-terrain-au-senegal.html"><h3>Acheter un terrain au Sénégal</h3><p>Documents, zones prisées et pièges à éviter pour réussir votre achat.</p></a></li>
+      <li><a href="/guides/vendre-son-bien-au-senegal.html"><h3>Vendre son bien sans agence</h3><p>Prix, annonce et transaction : vendez sans commission d'agence.</p></a></li>
+      <li><a href="/guides/quartiers-investir-dakar-thies.html"><h3>Les meilleurs quartiers pour investir</h3><p>Dakar, Thiès, Saly : comparez les zones selon votre objectif.</p></a></li>
+      <li><a href="/guides/louer-un-appartement-au-senegal.html"><h3>Louer un appartement</h3><p>Bail, dépôt de garantie et conseils pour trouver le bon logement.</p></a></li>
+      <li><a href="/blog.html"><h3>Le blog par localité</h3><p>Pognène, ZAC de Thiès, Diakhaw, Mboro, Kédougou : le marché local décrypté.</p></a></li>
+      <li><a href="/diaspora.html"><h3>Acheter depuis l'étranger</h3><p>Procuration, notaire et transfert d'argent : achetez en toute sécurité à distance.</p></a></li>
+    </ul>
+  </div>
+</section>
+
+<section class="acc-bloc acc-tarifs-fond" id="tarif">
+  <div class="conteneur">
+    <div class="acc-tete">
+      <div>
+        <h2>Une formule pour chaque volume d'annonces</h2>
+        <p>Paiement par Orange Money ou Wave : compte activé automatiquement après paiement. Une annonce supprimée ou refusée libère sa place.</p>
       </div>
-      <div class="carte-formule">
-        <div class="prix">10 000 <span>FCFA</span></div>
-        <div class="annonces">10 annonces</div>
-        <ul><li>Compte activé automatiquement après paiement</li><li>Annonces validées par notre équipe</li><li>Sans commission sur la vente</li></ul>
-        <a href="inscription.html" class="bouton bouton-secondaire">Choisir</a>
+    </div>
+    <div class="acc-tarifs">
+      <div class="acc-plan">
+        <div class="prix">5 000<small>FCFA</small></div>
+        <div class="nb">5 annonces</div>
+        <ul><li>Compte activé après paiement</li><li>Annonces validées par notre équipe</li><li>Sans commission sur la vente</li></ul>
+        <a href="inscription.html" class="bouton bouton-secondaire">Choisir cette formule</a>
       </div>
-      <div class="carte-formule">
-        <div class="prix">15 000 <span>FCFA</span></div>
-        <div class="annonces">15 annonces</div>
-        <ul><li>Compte activé automatiquement après paiement</li><li>Annonces validées par notre équipe</li><li>Sans commission sur la vente</li></ul>
-        <a href="inscription.html" class="bouton bouton-secondaire">Choisir</a>
+      <div class="acc-plan fort">
+        <div class="prix">10 000<small>FCFA</small></div>
+        <div class="nb">10 annonces</div>
+        <ul><li>Compte activé après paiement</li><li>Annonces validées par notre équipe</li><li>Sans commission sur la vente</li></ul>
+        <a href="inscription.html" class="bouton bouton-primaire">Choisir cette formule</a>
       </div>
+      <div class="acc-plan">
+        <div class="prix">15 000<small>FCFA</small></div>
+        <div class="nb">15 annonces</div>
+        <ul><li>Compte activé après paiement</li><li>Annonces validées par notre équipe</li><li>Sans commission sur la vente</li></ul>
+        <a href="inscription.html" class="bouton bouton-secondaire">Choisir cette formule</a>
+      </div>
+    </div>
+    <p class="acc-note-tarif">Vous gérez beaucoup de biens ? <a href="forfaits.html">Découvrez l'abonnement Agence et la mise en avant</a>.</p>
+  </div>
+</section>
+
+<section class="acc-final">
+  <div class="conteneur">
+    <h2>Votre bien mérite d'être vu.</h2>
+    <p>Créez votre compte propriétaire, choisissez un forfait et publiez votre première annonce en quelques minutes.</p>
+    <div class="actions">
+      <a href="inscription.html" class="bouton bouton-primaire">Publier une annonce</a>
+      <a href="tel:+221771437125" class="bouton bouton-fantome">Appeler le 77 143 71 25</a>
     </div>
   </div>
 </section>
+</main>
 
 <footer class="pied">
   <div class="conteneur">
@@ -298,41 +545,72 @@
 <script src="/js/api.js"></script>
 <script src="/js/menu.js"></script>
 <script>
-// Carte héro : affiche la dernière annonce réellement publiée (jamais de données fictives).
-// Si aucune annonce n'est publiée, la carte garde un état neutre.
-(async function chargerCarteHero() {
-  const carte = document.getElementById("cachet-carte");
-  if (!carte) return;
-  try {
-    const reponse = await fetch(API_BASE + "/biens?limite=1");
-    const data = await reponse.json();
-    const bien = data && data.resultats && data.resultats[0];
-    if (!bien) return; // aucune annonce publiée → état neutre conservé
-    const typeTxt = LIBELLES_TYPE[bien.type_bien] || bien.type_bien;
-    const transactionTxt = bien.transaction_type === "vente" ? "Vente" : "Location";
-    const ref = "RÉF. TF-" + String(bien.id).padStart(6, "0");
-    const sceau = (typeTxt.split(" ")[0] || "IMMO").toUpperCase();
-    const lien = urlAnnonce(bien);
-    carte.innerHTML =
-      '<a href="' + lien + '" style="text-decoration:none;color:inherit;display:block;">' +
-        '<div class="cachet-entete">' +
-          '<div>' +
-            '<div class="cachet-ref">' + ref + '</div>' +
-            '<h4 style="margin:6px 0 0;">' + bien.titre + '</h4>' +
-          '</div>' +
-          '<div class="sceau">' + sceau + '</div>' +
-        '</div>' +
-        '<div class="prix">' + formaterPrix(bien.prix) + '</div>' +
-        '<ul class="cachet-liste">' +
-          (bien.superficie ? '<li><span>Superficie</span><span>' + Number(bien.superficie).toLocaleString("fr-FR") + ' m²</span></li>' : '') +
-          (bien.chambres ? '<li><span>Chambres</span><span>' + bien.chambres + '</span></li>' : '') +
-          '<li><span>Transaction</span><span>' + transactionTxt + '</span></li>' +
-          '<li><span>Statut</span><span style="color:var(--vert-baobab)">Publiée</span></li>' +
-        '</ul>' +
-      '</a>';
-  } catch (e) {
-    // silencieux : la carte garde son état neutre
+// Accueil : vitrine du hero, annonces récentes et compteurs par ville, tous issus des annonces
+// réellement publiées (jamais de données fictives). Sans annonce ou en cas d'erreur, les blocs
+// dynamiques se masquent et le reste de la page reste complet.
+(function () {
+  const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const photo = (b, w) => {
+    const u = b.images && b.images[0];
+    if (!u) return "";
+    return u.replace("/upload/", "/upload/w_" + w + ",c_limit,q_auto,f_auto/");
+  };
+  const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const pin = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+  const surf = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M4 9h5M15 4v5"/></svg>';
+
+  function fiche(b, classe, sceau) {
+    const typeTxt = LIBELLES_TYPE[b.type_bien] || b.type_bien;
+    return '<a class="acc-fiche ' + classe + '" href="' + urlAnnonce(b) + '">' +
+      '<div class="photo"><img src="' + esc(photo(b, 760)) + '" alt="' + esc(b.titre) + '" width="760" height="570"' + (classe === "acc-fiche-1" ? ' fetchpriority="high"' : ' loading="lazy"') + '></div>' +
+      (sceau ? '<div class="acc-sceau">' + esc(typeTxt.split(" ")[0]) + '</div>' : "") +
+      '<div class="infos"><div class="ref">RÉF. TF-' + String(b.id).padStart(6, "0") + '</div><div class="titre">' + esc(b.titre) + '</div><div class="prix">' + formaterPrix(b.prix) + '</div></div></a>';
   }
+
+  function carte(b) {
+    const lieu = [b.quartier ? b.quartier.split(",")[0] : "", b.ville].filter(Boolean).join(", ");
+    return '<a class="acc-carte" href="' + urlAnnonce(b) + '">' +
+      '<div class="photo"><img src="' + esc(photo(b, 640)) + '" alt="' + esc(b.titre) + '" width="640" height="480" loading="lazy">' +
+      '<span class="etiq">' + (b.transaction_type === "vente" ? "À vendre" : "À louer") + '</span></div>' +
+      '<div class="prix">' + formaterPrix(b.prix) + '</div><h3>' + esc(b.titre) + '</h3>' +
+      '<div class="meta"><span>' + pin + esc(lieu) + '</span>' +
+      (b.superficie ? '<span>' + surf + Number(b.superficie).toLocaleString("fr-FR") + ' m²</span>' : "") +
+      (b.chambres ? '<span>' + b.chambres + ' ch.</span>' : "") + '</div></a>';
+  }
+
+  async function init() {
+    const liste = document.getElementById("liste-recentes");
+    const vitrine = document.getElementById("vitrine");
+    try {
+      const rep = await fetch(API_BASE + "/biens?limite=50");
+      const data = await rep.json();
+      const biens = (data && data.resultats) || [];
+      const avecPhoto = biens.filter((b) => b.images && b.images[0]);
+
+      if (avecPhoto.length) {
+        vitrine.innerHTML = fiche(avecPhoto[0], "acc-fiche-1", true) + (avecPhoto[1] ? fiche(avecPhoto[1], "acc-fiche-2", false) : "");
+      } else {
+        vitrine.className = "acc-vitrine-vide";
+      }
+
+      if (avecPhoto.length) {
+        liste.innerHTML = avecPhoto.slice(0, 6).map(carte).join("");
+        if (data.total) document.getElementById("voir-toutes").textContent = "Voir les " + data.total + " annonces";
+      } else {
+        document.getElementById("annonces-recentes").style.display = "none";
+      }
+
+      document.querySelectorAll("#villes .acc-ville").forEach((a) => {
+        const cle = a.dataset.ville;
+        const n = biens.filter((b) => norm(b.ville).indexOf(cle) === 0).length;
+        if (n) a.querySelector(".nb").textContent = "· " + n + (n > 1 ? " annonces" : " annonce");
+      });
+    } catch (e) {
+      vitrine.className = "acc-vitrine-vide";
+      document.getElementById("annonces-recentes").style.display = "none";
+    }
+  }
+  init();
 })();
 </script>
 </body>
