@@ -315,14 +315,21 @@ function jsonLdRealEstateListing(b, canonicalUrl) {
 // Rendu serveur de la fiche : SEO (title/desc/canonical/og/twitter) + contenu statique de
 // repli, identiques à ceux que le JS client poserait. Sans JS, Google voit une page complète
 // et auto-canonique au lieu d'un doublon de /annonce.html.
+// Coupe à la dernière limite de mot avant `max` caractères (« … » seulement si tronqué).
+function coupeAuMot(txt, max) {
+  if (txt.length <= max) return txt;
+  return txt.slice(0, max).replace(/\s+\S*$/, "") + "…";
+}
+
 async function rendreFicheAnnonce(b) {
   const typeTxt = LIBELLES_TYPE[b.type_bien] || b.type_bien;
   const transactionTxt = b.transaction_type === "vente" ? "à vendre" : "à louer";
   const villeTxt = b.ville ? ` à ${b.ville}` : "";
   const titreType = /à vendre|à louer/.test(typeTxt) ? typeTxt : `${typeTxt} ${transactionTxt}`;
-  const titreSeo = `${titreType}${villeTxt} · ${formaterPrix(b.prix)} — SakeurImmo`;
+  const detailTxt = b.superficie ? ` ${Number(b.superficie).toLocaleString("fr-FR")} m²` : "";
+  const titreSeo = `${titreType}${detailTxt}${villeTxt} · ${formaterPrix(b.prix)} — SakeurImmo`;
   const descSeo = b.description
-    ? b.description.slice(0, 155).replace(/\n/g, " ") + "..."
+    ? coupeAuMot(b.description.replace(/\s+/g, " "), 155)
     : `Consultez cette annonce de ${titreType}${villeTxt} sur SakeurImmo.`;
   const canonicalUrl = `https://sakeurimmo.com${urlAnnonce(b)}`;
   const images = (b.images || []).filter(Boolean);
@@ -506,6 +513,7 @@ app.use("/api/", (req, res, next) => {
   limiteur(req, res, next);
 });
 
+app.get("/healthz", (req, res) => res.json({ statut: "ok" }));
 app.get("/api/sante", (req, res) => res.json({ statut: "ok", heure: new Date().toISOString() }));
 
 // Sitemap XML dynamique : pages statiques + annonces publiées (SEO)
