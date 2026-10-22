@@ -36,13 +36,12 @@ const QR_PAIEMENT = {
   // au moment de confirmer. L'annoncer évite l'abandon au dernier écran.
   compte_marchand: "SALAMA RAHMA VOYAGES",
   wave: {
-    lien: "https://pay.wave.com/mqr/rat_7kWe",
-    image: "/images/qr-wave.svg",
+    lien: "https://pay.wave.com/m/M_sn_WTADldT6yfZI/c/sn/",
   },
   orange_money: {
     code_marchand: "562827",
     ussd: "#144#5*562827*{montant}*code secret#",
-    image: "/images/qr-orange-money.svg",
+    lien: "https://sugu.orange-sonatel.com/mp/dmeKN_M4nDor5P6vf_wu",
   },
 };
 

@@ -4,7 +4,7 @@ SakeurImmo est une plateforme en ligne qui permet aux propriétaires sénégalai
 
 ## Forfaits & tarifs
 
-Chaque forfait donne droit à un nombre d'annonces actives. Le paiement est effectué par QR Wave ou Orange Money, ou par PayPal (carte ou compte PayPal) ; le compte est activé et les places sont créditées automatiquement après le paiement.
+Chaque forfait donne droit à un nombre d'annonces actives. Le paiement est effectué par Wave ou Orange Money, ou par PayPal (carte ou compte PayPal) ; le compte est activé et les places sont créditées automatiquement après le paiement.
 
 - Forfait 5 000 FCFA : 5 annonces actives.
 - Forfait 10 000 FCFA : 10 annonces actives.

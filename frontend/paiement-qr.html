@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Paiement par QR — SakeurImmo</title>
+<title>Paiement Wave / Orange Money — SakeurImmo</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/svg+xml" href="/images/favicon.svg">
 <link rel="stylesheet" href="css/style.css">
@@ -20,9 +20,9 @@
 </header>
 
 <div class="carte-formulaire">
-  <h2 class="mt-0">Payer par QR — Wave ou Orange Money</h2>
+  <h2 class="mt-0">Payer avec Wave ou Orange Money</h2>
   <p class="aide" style="margin-bottom:22px;">
-    Scannez le code correspondant à votre opérateur, payez le montant exact, puis déclarez votre transaction ci-dessous.
+    Ouvrez le lien de paiement de votre opérateur, payez le montant exact, puis déclarez votre transaction ci-dessous.
     Votre compte est activé automatiquement dès la déclaration du paiement.
   </p>
 
@@ -44,12 +44,11 @@
     <div class="grille-2">
       <div class="champ centre">
         <strong>Wave</strong>
-        <img src="/images/qr-wave.svg" alt="QR code Wave pour payer SakeurImmo" style="width:100%;max-width:220px;margin:10px auto;display:block;">
-        <a id="lien-wave" class="bouton bouton-secondaire" href="#" target="_blank" rel="noopener">Ouvrir dans Wave</a>
+        <a id="lien-wave" class="bouton bouton-secondaire" href="#" target="_blank" rel="noopener">Payer avec Wave</a>
       </div>
       <div class="champ centre">
         <strong>Orange Money</strong>
-        <img src="/images/qr-orange-money.svg" alt="QR code Orange Money pour payer SakeurImmo" style="width:100%;max-width:220px;margin:10px auto;display:block;">
+        <a id="lien-orange" class="bouton bouton-secondaire" href="#" target="_blank" rel="noopener">Payer avec Orange Money</a>
         <p class="aide">Code marchand <strong id="code-marchand"></strong><br><code id="ussd"></code></p>
       </div>
     </div>
@@ -101,6 +100,7 @@ async function charger() {
     document.getElementById("beneficiaire").textContent = data.qr.beneficiaire;
     document.getElementById("compte-marchand").textContent = data.qr.compte_marchand;
     document.getElementById("lien-wave").href = data.qr.wave.lien;
+    document.getElementById("lien-orange").href = data.qr.orange_money.lien;
     document.getElementById("code-marchand").textContent = data.qr.orange_money.code_marchand;
     document.getElementById("ussd").textContent = data.qr.orange_money.ussd;
 
