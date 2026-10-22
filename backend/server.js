@@ -337,47 +337,69 @@ async function rendreFicheAnnonce(b) {
   const altText = `${echapper(b.titre)} — ${echapper(b.quartier ? b.quartier + ", " : "")}${echapper(b.ville)}`;
   const jsonLd = jsonLdRealEstateListing(b, canonicalUrl);
 
-  const imagesHtml = images
-    .map((img) => {
-      const src = img.startsWith("http") ? img : `https://sakeurimmo.com${img}`;
-      return `<img src="${echapper(src)}" alt="${altText}" style="width:220px;height:150px;object-fit:cover;border-radius:6px;border:1px solid var(--sable-fonce);">`;
-    })
-    .join("");
+  const pinSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+  const urlImage = (img) => echapper(img.startsWith("http") ? img : `https://sakeurimmo.com${img}`);
+  const pluriel = (n, mot) => `${n} ${mot}${Number(n) > 1 ? "s" : ""}`;
+  const faitsHtml = [
+    typeTxt,
+    b.transaction_type === "vente" ? "Vente" : "Location",
+    b.superficie ? `${Number(b.superficie).toLocaleString("fr-FR")} m²` : "",
+    b.chambres ? pluriel(b.chambres, "chambre") : "",
+    b.salles_bain ? pluriel(b.salles_bain, "salle") + " de bain" : "",
+  ].filter(Boolean).map((t) => `<li>${echapper(t)}</li>`).join("");
+  const vignettesHtml = images.length > 1
+    ? `<div class="fiche-vignettes">${images.map((img) => `<img src="${urlImage(img)}" alt="${altText}" loading="lazy" onclick="document.getElementById('photo-principale').src=this.src">`).join("")}</div>`
+    : "";
+  const lieuTxt = `${b.quartier ? b.quartier + ", " : ""}${b.ville || ""}`;
 
   const contenu = `
-    <div class="cachet-ref" style="margin-bottom:10px;">RÉF. TF-${String(b.id).padStart(6, "0")}</div>
-    <h1>${echapper(b.titre)}</h1>
-    <p style="color:var(--texte-clair);margin-top:-6px;">${echapper(b.quartier ? b.quartier + ", " : "")}${echapper(b.ville)}</p>
-    <p style="font-size:1.6rem;font-weight:700;margin:12px 0;">${formaterPrix(b.prix)}</p>
-    ${image ? `<img src="${echapper(image)}" alt="${altText}" style="max-width:100%;border-radius:6px;">` : ""}
-    <p style="margin-top:14px;">${echapper(b.description || "")}</p>
-    <h3>Description complète</h3>
-    <div style="color:var(--texte);line-height:1.7;">${echapper(b.description || "Aucune description fournie.").replace(/\n/g, "<br>")}</div>
-    <div style="margin-top:32px;background:var(--blanc);border:1px solid var(--sable-fonce);border-radius:8px;padding:30px;">
-      <h3 style="margin-top:0;">Contacter le propriétaire</h3>
-      <div id="msg-contact-erreur"></div>
-      <div id="msg-contact-succes"></div>
-      <form id="form-contact" style="display:grid;gap:14px;">
-        <div class="grille-2" style="gap:14px;">
-          <div class="champ" style="margin:0;">
-            <label>Votre nom *</label>
-            <input type="text" name="nom" required placeholder="Prénom et nom">
-          </div>
-          <div class="champ" style="margin:0;">
-            <label>Votre e-mail *</label>
-            <input type="email" name="email" required placeholder="vous@exemple.com">
-          </div>
+    <nav class="fil-ariane" aria-label="Fil d'Ariane" style="color:var(--texte-clair);margin-bottom:22px;">
+      <a href="/index.html" style="color:var(--texte-clair);">Accueil</a><span class="sep" aria-hidden="true">/</span>
+      <a href="/annonces.html" style="color:var(--texte-clair);">Annonces</a><span class="sep" aria-hidden="true">/</span>
+      <span aria-current="page">${echapper(b.ville || "Annonce")}</span>
+    </nav>
+    <div class="fiche-grille">
+      <div>
+        ${image ? `<div class="fiche-galerie"><img id="photo-principale" class="principale" src="${echapper(image)}" alt="${altText}"></div>` : ""}
+        ${vignettesHtml}
+        <div class="fiche-ref">RÉF. TF-${String(b.id).padStart(6, "0")}</div>
+        <h1 style="font-size:clamp(1.8rem,3.4vw,2.6rem);font-weight:500;letter-spacing:-.02em;margin-bottom:12px;">${echapper(b.titre)}</h1>
+        <p class="fiche-lieu">${pinSvg}${echapper(lieuTxt)}</p>
+        <ul class="fiche-faits">${faitsHtml}</ul>
+        <div class="fiche-texte">
+          <h2>Description</h2>
+          <div style="line-height:1.8;">${echapper(b.description || "Aucune description fournie.").replace(/\n/g, "<br>")}</div>
         </div>
-        <div class="champ" style="margin:0;">
-          <label>Téléphone (optionnel)</label>
-          <input type="text" name="telephone" placeholder="+221 77 000 00 00">
+      </div>
+      <aside class="fiche-cote">
+        <div class="fiche-prix-carte">
+          <span class="transaction">${b.transaction_type === "vente" ? "À vendre" : "À louer"}</span>
+          <div class="prix">${formaterPrix(b.prix)}</div>
+          <h2>Contacter le propriétaire</h2>
+          <div id="msg-contact-erreur"></div>
+          <div id="msg-contact-succes"></div>
+          <form id="form-contact" style="display:grid;gap:14px;">
+            <div class="champ" style="margin:0;">
+              <label>Votre nom *</label>
+              <input type="text" name="nom" required placeholder="Prénom et nom">
+            </div>
+            <div class="champ" style="margin:0;">
+              <label>Votre e-mail *</label>
+              <input type="email" name="email" required placeholder="vous@exemple.com">
+            </div>
+            <div class="champ" style="margin:0;">
+              <label>Téléphone (optionnel)</label>
+              <input type="text" name="telephone" placeholder="+221 77 000 00 00">
+            </div>
+            <div class="champ" style="margin:0;">
+              <label>Votre message *</label>
+              <textarea name="message" rows="4" required placeholder="Bonjour, je suis intéressé(e) par ce bien..."></textarea>
+            </div>
+            <button type="submit" class="bouton bouton-primaire bouton-plein-largeur" id="btn-envoyer-message">Envoyer le message</button>
+          </form>
+          <p class="aide centre" style="margin-top:14px;">Votre message est transmis au propriétaire. Aucune commission d'agence.</p>
         </div>
-        <div class="champ" style="margin:0;">
-          <label>Votre message *</label>
-          <textarea name="message" rows="4" required placeholder="Bonjour, je suis intéressé(e) par ce bien..."></textarea>
-        </div>
-        <button type="submit" class="bouton bouton-primaire" id="btn-envoyer-message">Envoyer le message</button>
-      </form>
+      </aside>
     </div>`;
 
   const templateAnnonce = await obtenirTemplateAnnonce();
