@@ -5,7 +5,7 @@
 ## Pages principales
 
 - [Annonces immobilières au Sénégal](https://sakeurimmo.com/annonces.html) : liste des annonces publiées (terrains, appartements, maisons, villas ; à vendre ou à louer), filtrables par type, ville et budget.
-- [Forfaits & tarifs](https://sakeurimmo.com/forfaits.html) : publication d'annonces par forfait — 5 000 FCFA pour 5 annonces actives, 10 000 FCFA pour 10, 15 000 FCFA pour 15, abonnement Agence 30 000 FCFA/mois pour 50 ; mise en avant dès 2 000 FCFA. Paiement QR Wave / Orange Money ou PayPal, compte activé immédiatement.
+- [Forfaits & tarifs](https://sakeurimmo.com/forfaits.html) : publication d'annonces par forfait — 5 000 FCFA pour 5 annonces actives, 10 000 FCFA pour 10, 15 000 FCFA pour 15, abonnement Agence 30 000 FCFA/mois pour 50 ; mise en avant dès 2 000 FCFA. Paiement Wave / Orange Money ou PayPal, compte activé immédiatement.
 - [Guides & Conseils](https://sakeurimmo.com/guides.html) : guides pour acheter un terrain au Sénégal, vendre sans agence, louer un appartement, et investir par quartiers (Dakar, Thiès, Saly).
 - [Blog immobilier](https://sakeurimmo.com/blog.html) : articles par localité (Pognène, ZAC de Thiès, Diakhaw, Mboro, Kédougou…).
 - [Acheter depuis l'étranger (Diaspora)](https://sakeurimmo.com/diaspora.html) : guide de la diaspora — procuration, notaire, transfert d'argent.
