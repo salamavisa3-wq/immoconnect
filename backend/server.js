@@ -176,7 +176,7 @@ function carteAnnonceHtml(b) {
         ${image}
       </div>
       <div class="annonce-corps">
-        <h4>${echapper(b.titre)}</h4>
+        <h3>${echapper(b.titre)}</h3>
         <div class="annonce-lieu">${b.quartier ? echapper(b.quartier) + ", " : ""}${echapper(b.ville)}</div>
         <div class="annonce-prix">${formaterPrix(b.prix)}</div>
         <div class="annonce-carac">
@@ -336,6 +336,25 @@ async function rendreFicheAnnonce(b) {
   const image = images[0] ? (images[0].startsWith("http") ? images[0] : `https://sakeurimmo.com${images[0]}`) : "https://sakeurimmo.com/images/og-image.jpg";
   const altText = `${echapper(b.titre)} — ${echapper(b.quartier ? b.quartier + ", " : "")}${echapper(b.ville)}`;
   const jsonLd = jsonLdRealEstateListing(b, canonicalUrl);
+  const fil = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Accueil", item: "https://sakeurimmo.com/" },
+      { "@type": "ListItem", position: 2, name: "Annonces", item: "https://sakeurimmo.com/annonces.html" },
+      { "@type": "ListItem", position: 3, name: b.titre, item: canonicalUrl },
+    ],
+  }).replace(/</g, "\u003c");
+  // Annonces similaires (maillage interne) : même ville d'abord, puis même type de bien — jamais bloquant pour la fiche
+  let similairesHtml = "";
+  try {
+    const lignes = await db.all(
+      "SELECT * FROM biens WHERE statut = 'publie' AND id != ? ORDER BY CASE WHEN ville = ? THEN 0 WHEN type_bien = ? THEN 1 ELSE 2 END, cree_le DESC LIMIT 3",
+      [b.id, b.ville || "", b.type_bien || ""]
+    );
+    const sim = lignes.map((x) => ({ ...x, images: JSON.parse(x.images || "[]") }));
+    if (sim.length) similairesHtml = `<section class="fiche-similaires" aria-labelledby="titre-similaires"><h2 id="titre-similaires">Annonces similaires</h2><div class="grille-annonces">${sim.map(carteAnnonceHtml).join("")}</div></section>`;
+  } catch (e) { console.error("Annonces similaires indisponibles :", e.message); }
 
   const pinSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
   const urlImage = (img) => echapper(img.startsWith("http") ? img : `https://sakeurimmo.com${img}`);
@@ -400,7 +419,8 @@ async function rendreFicheAnnonce(b) {
           <p class="aide centre" style="margin-top:14px;">Votre message est transmis au propriétaire. Aucune commission d'agence.</p>
         </div>
       </aside>
-    </div>`;
+    </div>
+    ${similairesHtml}`;
 
   const templateAnnonce = await obtenirTemplateAnnonce();
   return templateAnnonce
@@ -414,7 +434,7 @@ async function rendreFicheAnnonce(b) {
     .replace(/(<meta name="twitter:title" content=")[^"]*(">)/, `$1${echapper(titreSeo)}$2`)
     .replace(/(<meta name="twitter:description" content=")[^"]*(">)/, `$1${echapper(descSeo)}$2`)
     .replace(/(<meta name="twitter:image" content=")[^"]*(">)/, `$1${image}$2`)
-    .replace(/<\/head>/, `  <script type="application/ld+json">${jsonLd}</script>\n</head>`)
+    .replace(/<\/head>/, `  <script type="application/ld+json">${jsonLd}</script>\n  <script type="application/ld+json">${fil}</script>\n</head>`)
     .replace(/\n    Chargement...\n/, `\n${contenu}\n`);
 }
 

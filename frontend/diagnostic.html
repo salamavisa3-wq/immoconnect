@@ -24,19 +24,20 @@
   .dg .err { color: var(--rouge-alerte); font-size: .9rem; min-height: 1.2em; margin-top: 8px; }
   .dg .carte { background: var(--blanc); border: 1px solid var(--sable-fonce); border-radius: var(--rayon);
     padding: 16px; box-shadow: var(--ombre); margin-bottom: 14px; }
-  .dg .score { font-family: var(--police-titre); font-size: 3rem; line-height: 1; color: var(--terre); }
+  .dg .score { font-family: var(--police-titre); font-size: 3rem; line-height: 1; color: var(--terre-texte); }
   .dg .score small { font-size: 1rem; color: var(--texte-clair); }
   .dg .flou { height: 14px; border-radius: 7px; background: var(--sable-fonce); margin: 10px 0; filter: blur(3px); }
   .dg ul.pts { margin: 8px 0 0 18px; padding: 0; }
   .dg ul.pts li { margin-bottom: 8px; }
-  .dg ul.pts b { color: var(--terre); }
+  .dg ul.pts b { color: var(--terre-texte); }
   .dg .ok { color: var(--vert-baobab); }
   .dg .note { font-size: .8rem; color: var(--texte-clair); margin-top: 10px; }
   .dg [hidden] { display: none !important; }
 </style>
 </head>
 <body>
-<main class="dg">
+<a class="lien-evitement" href="#contenu">Aller au contenu</a>
+<main id="contenu" class="dg">
 
 <!-- 1. Saisie -->
 <section id="v-saisie">
@@ -173,7 +174,7 @@ try { const s = JSON.parse(localStorage.getItem(CLE) || "null"); if (s) { rempli
         <address>Avenue El Hadji Malick Sy, Thiès<br><a href="tel:+221771437125">77 143 71 25</a> · <a href="tel:+221778678787">77 867 87 87</a><br><a href="mailto:contact@sakeurimmo.com">contact@sakeurimmo.com</a></address>
       </div>
       <div>
-        <h4>Acheter</h4>
+        <p class="pied-titre">Acheter</p>
         <ul>
           <li><a href="/categorie/terrains-a-vendre.html">Terrains à vendre</a></li>
           <li><a href="/categorie/villas-a-vendre.html">Villas à vendre</a></li>
@@ -184,7 +185,7 @@ try { const s = JSON.parse(localStorage.getItem(CLE) || "null"); if (s) { rempli
         </ul>
       </div>
       <div>
-        <h4>Louer</h4>
+        <p class="pied-titre">Louer</p>
         <ul>
           <li><a href="/categorie/appartements-a-louer.html">Appartements à louer</a></li>
           <li><a href="/categorie/appartements-meubles.html">Appartements meublés</a></li>
@@ -195,7 +196,7 @@ try { const s = JSON.parse(localStorage.getItem(CLE) || "null"); if (s) { rempli
         </ul>
       </div>
       <div>
-        <h4>SakeurImmo</h4>
+        <p class="pied-titre">SakeurImmo</p>
         <ul>
           <li><a href="/annonces.html">Toutes les annonces</a></li>
           <li><a href="/forfaits.html">Forfaits et tarifs</a></li>

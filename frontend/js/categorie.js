@@ -14,7 +14,7 @@ function carteAnnonce(b) {
         ${image}
       </div>
       <div class="annonce-corps">
-        <h4>${b.titre}</h4>
+        <h3>${b.titre}</h3>
         <div class="annonce-lieu">${b.quartier ? b.quartier + ", " : ""}${b.ville}</div>
         <div class="annonce-prix">${formaterPrix(b.prix)}</div>
         <div class="annonce-carac">
@@ -29,7 +29,7 @@ function carteAnnonce(b) {
 async function chargerGrille(params) {
   const grille = document.getElementById("grille-categorie");
   if (!grille) return;
-  grille.innerHTML = "<p style='color:var(--texte-clair)'>Chargement des annonces...</p>";
+  if (!grille.querySelector(".annonce-carte")) grille.innerHTML = "<p style='color:var(--texte-clair)'>Chargement des annonces...</p>"; // grille déjà rendue par le serveur : on ne la vide pas (évite l'effondrement/ré-ouverture = décalage de mise en page)
   const query = new URLSearchParams(params).toString();
   try {
     const { resultats, total } = await appelApi(`/biens?${query}`);
