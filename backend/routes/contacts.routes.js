@@ -29,6 +29,39 @@ router.post("/:bien_id", async (req, res) => {
   res.status(201).json({ message: "Votre message a bien été envoyé. Le propriétaire vous contactera directement." });
 });
 
+// Numéro joignable pour une annonce : téléphone de l'annonceur, sauf annonces publiées par
+// un compte admin (import/publication SakeurImmo) → toujours le numéro de la plateforme.
+// Le numéro n'est jamais exposé par l'API publique : seuls ces redirects le contiennent.
+const NUMERO_ADMIN = "221771437125";
+function numeroContact(row) {
+  if (row.role === "admin") return NUMERO_ADMIN;
+  let d = String(row.telephone || "").replace(/\D/g, "");
+  if (d.startsWith("00")) d = d.slice(2);
+  if (d.length === 9) d = "221" + d;
+  return d.length >= 11 && d.length <= 15 ? d : null;
+}
+
+// GET /api/contacts/direct/:bien_id/:canal — redirige vers WhatsApp ou l'appli SMS, message prérempli
+router.get("/direct/:bien_id/:canal", async (req, res) => {
+  const { canal } = req.params;
+  if (canal !== "whatsapp" && canal !== "sms") return res.status(404).send("Introuvable.");
+  const bien = await db.get(
+    `SELECT b.id, b.titre, u.telephone, u.role FROM biens b JOIN users u ON u.id = b.user_id
+     WHERE b.id = ? AND b.statut = 'publie'`,
+    [Number(req.params.bien_id)]
+  );
+  const numero = bien && numeroContact(bien);
+  if (!numero) return res.status(404).send("Contact indisponible pour cette annonce.");
+
+  const texte = `Bonjour, je suis intéressé(e) par votre annonce « ${bien.titre} » (RÉF. TF-${String(bien.id).padStart(6, "0")}) sur SakeurImmo : https://sakeurimmo.com/annonce.html?id=${bien.id}`;
+  res.set("X-Robots-Tag", "noindex, nofollow");
+  if (canal === "whatsapp") return res.redirect(302, `https://wa.me/${numero}?text=${encodeURIComponent(texte)}`);
+
+  // Le schéma sms: n'est pas toujours suivi par un redirect 302 : petite page qui l'ouvre.
+  const lien = `sms:+${numero}?body=${encodeURIComponent(texte)}`;
+  res.send(`<!DOCTYPE html><meta charset="utf-8"><meta name="robots" content="noindex"><title>Envoyer un SMS</title><p style="font-family:sans-serif;padding:24px;">Ouverture de votre application SMS… <a href="${lien}">Cliquez ici si rien ne se passe</a>.</p><script>location.href=${JSON.stringify(lien)};</script>`);
+});
+
 // GET /api/contacts/moi — boîte de réception du propriétaire connecté
 // Retourne tous les messages liés à ses annonces, du plus récent au plus ancien.
 router.get("/moi", authRequis, async (req, res) => {
