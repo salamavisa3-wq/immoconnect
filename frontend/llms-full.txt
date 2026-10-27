@@ -31,6 +31,7 @@ Les pages par type de bien : https://sakeurimmo.com/categorie/terrains-a-vendre.
 - Immobilier à Mbour : https://sakeurimmo.com/villes/immobilier-a-mbour.html
 - Immobilier à Ziguinchor : https://sakeurimmo.com/villes/immobilier-a-ziguinchor.html
 - Immobilier à Kaolack : https://sakeurimmo.com/villes/immobilier-a-kaolack.html
+- Immobilier à Diass : https://sakeurimmo.com/villes/immobilier-a-diass.html
 
 ## Guides
 
