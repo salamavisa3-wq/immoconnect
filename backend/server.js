@@ -377,6 +377,10 @@ async function rendreFicheAnnonce(b) {
           <span class="transaction">${b.transaction_type === "vente" ? "À vendre" : "À louer"}</span>
           <div class="prix">${formaterPrix(b.prix)}</div>
           <h2>Contacter le propriétaire</h2>
+          <div style="display:grid;gap:10px;margin-bottom:18px;">
+            <a href="/api/contacts/direct/${b.id}/whatsapp" target="_blank" rel="nofollow noopener" class="bouton bouton-primaire bouton-plein-largeur" style="background:#25D366;border-color:#25D366;color:#fff;">Écrire sur WhatsApp</a>
+            <a href="/api/contacts/direct/${b.id}/sms" rel="nofollow" class="bouton bouton-secondaire bouton-plein-largeur">Envoyer un SMS</a>
+          </div>
           <div id="msg-contact-erreur"></div>
           <div id="msg-contact-succes"></div>
           <form id="form-contact" style="display:grid;gap:14px;">

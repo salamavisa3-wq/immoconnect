@@ -116,6 +116,10 @@ async function chargerDetail() {
 
         <div style="margin-top:32px;background:var(--blanc);border:1px solid var(--sable-fonce);border-radius:8px;padding:30px;">
           <h3 style="margin-top:0;">Contacter le propriétaire</h3>
+          <div style="display:grid;gap:10px;margin-bottom:18px;">
+            <a href="/api/contacts/direct/${b.id}/whatsapp" target="_blank" rel="nofollow noopener" class="bouton bouton-primaire bouton-plein-largeur" style="background:#25D366;border-color:#25D366;color:#fff;">Écrire sur WhatsApp</a>
+            <a href="/api/contacts/direct/${b.id}/sms" rel="nofollow" class="bouton bouton-secondaire bouton-plein-largeur">Envoyer un SMS</a>
+          </div>
           <div id="msg-contact-erreur"></div>
           <div id="msg-contact-succes"></div>
           <form id="form-contact" style="display:grid;gap:14px;">
