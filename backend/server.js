@@ -158,6 +158,7 @@ const VILLES_SLUG_NOM = {
   "immobilier-a-ziguinchor": "Ziguinchor",
   "immobilier-a-kaolack": "Kaolack",
   "immobilier-a-diass": "Diass",
+  "immobilier-a-nguekhokh": "Nguékhokh",
 };
 
 // Carte annonce côté serveur (miroir de la fonction JS carteAnnonce)
@@ -586,6 +587,7 @@ app.get("/sitemap.xml", async (req, res) => {
       "immobilier-a-ziguinchor",
       "immobilier-a-kaolack",
       "immobilier-a-diass",
+      "immobilier-a-nguekhokh",
     ]
       // ville stockée en LIKE côté listerBiensPublies (ex. "Saly Portudal" doit matcher "Saly") :
       // même logique ici, une correspondance partielle suffit à garder la page indexée.
