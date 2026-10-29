@@ -605,6 +605,7 @@ app.get("/sitemap.xml", async (req, res) => {
       "maison-a-vendre-mboro",
       "terrain-agricole-a-vendre-kedougou",
       "immeuble-de-rapport-a-vendre-thies",
+      "terrain-a-vendre-nguekhokh",
     ].map((slug) => ({
       loc: `https://sakeurimmo.com/blog/${slug}.html`,
       lastmod: aujourdHui,
