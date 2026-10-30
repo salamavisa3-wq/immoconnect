@@ -323,6 +323,12 @@ function coupeAuMot(txt, max) {
   return txt.slice(0, max).replace(/\s+\S*$/, "") + "…";
 }
 
+// Vidéos hébergées dans frontend/videos, rattachées à une annonce par son id.
+// Rendu côté serveur : lecteur natif + VideoObject JSON-LD sur la fiche.
+const VIDEOS_ANNONCES = {
+  18: { src: "/videos/terrain-nguekhokh-2-3-ha.mp4", duree: "PT1M10S", date: "2026-10-30" },
+};
+
 async function rendreFicheAnnonce(b) {
   const typeTxt = LIBELLES_TYPE[b.type_bien] || b.type_bien;
   const transactionTxt = b.transaction_type === "vente" ? "à vendre" : "à louer";
@@ -338,6 +344,24 @@ async function rendreFicheAnnonce(b) {
   const image = images[0] ? (images[0].startsWith("http") ? images[0] : `https://sakeurimmo.com${images[0]}`) : "https://sakeurimmo.com/images/og-image.jpg";
   const altText = `${echapper(b.titre)} — ${echapper(b.quartier ? b.quartier + ", " : "")}${echapper(b.ville)}`;
   const jsonLd = jsonLdRealEstateListing(b, canonicalUrl);
+  const video = VIDEOS_ANNONCES[b.id];
+  const videoHtml = video
+    ? `<div class="fiche-video" style="margin:22px 0;"><video controls preload="none" playsinline poster="${echapper(image)}" style="width:100%;height:auto;border-radius:12px;background:#000;" aria-label="Vidéo : ${echapper(b.titre)}"><source src="${video.src}" type="video/mp4"></video></div>`
+    : "";
+  const jsonLdVideo = video
+    ? JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        "@id": `${canonicalUrl}#video`,
+        name: b.titre,
+        description: b.description ? b.description.slice(0, 300).replace(/\n/g, " ") : b.titre,
+        thumbnailUrl: image,
+        uploadDate: video.date,
+        duration: video.duree,
+        contentUrl: `https://sakeurimmo.com${video.src}`,
+        inLanguage: "fr-SN",
+      })
+    : "";
 
   const pinSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
   const urlImage = (img) => echapper(img.startsWith("http") ? img : `https://sakeurimmo.com${img}`);
@@ -364,6 +388,7 @@ async function rendreFicheAnnonce(b) {
       <div>
         ${image ? `<div class="fiche-galerie"><img id="photo-principale" class="principale" src="${echapper(image)}" alt="${altText}"></div>` : ""}
         ${vignettesHtml}
+        ${videoHtml}
         <div class="fiche-ref">RÉF. TF-${String(b.id).padStart(6, "0")}</div>
         <h1 style="font-size:clamp(1.8rem,3.4vw,2.6rem);font-weight:500;letter-spacing:-.02em;margin-bottom:12px;">${echapper(b.titre)}</h1>
         <p class="fiche-lieu">${pinSvg}${echapper(lieuTxt)}</p>
@@ -420,7 +445,7 @@ async function rendreFicheAnnonce(b) {
     .replace(/(<meta name="twitter:title" content=")[^"]*(">)/, `$1${echapper(titreSeo)}$2`)
     .replace(/(<meta name="twitter:description" content=")[^"]*(">)/, `$1${echapper(descSeo)}$2`)
     .replace(/(<meta name="twitter:image" content=")[^"]*(">)/, `$1${image}$2`)
-    .replace(/<\/head>/, `  <script type="application/ld+json">${jsonLd}</script>\n</head>`)
+    .replace(/<\/head>/, `  <script type="application/ld+json">${jsonLd}</script>\n${jsonLdVideo ? `  <script type="application/ld+json">${jsonLdVideo}</script>\n` : ""}</head>`)
     .replace(/\n    Chargement...\n/, `\n${contenu}\n`);
 }
 
