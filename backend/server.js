@@ -178,7 +178,7 @@ function carteAnnonceHtml(b) {
         ${image}
       </div>
       <div class="annonce-corps">
-        <h4>${echapper(b.titre)}</h4>
+        <h3>${echapper(b.titre)}</h3>
         <div class="annonce-lieu">${b.quartier ? echapper(b.quartier) + ", " : ""}${echapper(b.ville)}</div>
         <div class="annonce-prix">${formaterPrix(b.prix)}</div>
         <div class="annonce-carac">
@@ -344,6 +344,25 @@ async function rendreFicheAnnonce(b) {
   const image = images[0] ? (images[0].startsWith("http") ? images[0] : `https://sakeurimmo.com${images[0]}`) : "https://sakeurimmo.com/images/og-image.jpg";
   const altText = `${echapper(b.titre)} — ${echapper(b.quartier ? b.quartier + ", " : "")}${echapper(b.ville)}`;
   const jsonLd = jsonLdRealEstateListing(b, canonicalUrl);
+  const fil = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Accueil", item: "https://sakeurimmo.com/" },
+      { "@type": "ListItem", position: 2, name: "Annonces", item: "https://sakeurimmo.com/annonces.html" },
+      { "@type": "ListItem", position: 3, name: b.titre, item: canonicalUrl },
+    ],
+  }).replace(/</g, "\u003c");
+  // Annonces similaires (maillage interne) : même ville d'abord, puis même type de bien — jamais bloquant pour la fiche
+  let similairesHtml = "";
+  try {
+    const lignes = await db.all(
+      "SELECT * FROM biens WHERE statut = 'publie' AND id != ? ORDER BY CASE WHEN ville = ? THEN 0 WHEN type_bien = ? THEN 1 ELSE 2 END, cree_le DESC LIMIT 3",
+      [b.id, b.ville || "", b.type_bien || ""]
+    );
+    const sim = lignes.map((x) => ({ ...x, images: JSON.parse(x.images || "[]") }));
+    if (sim.length) similairesHtml = `<section class="fiche-similaires" aria-labelledby="titre-similaires"><h2 id="titre-similaires">Annonces similaires</h2><div class="grille-annonces">${sim.map(carteAnnonceHtml).join("")}</div></section>`;
+  } catch (e) { console.error("Annonces similaires indisponibles :", e.message); }
   const video = VIDEOS_ANNONCES[b.id];
   const videoHtml = video
     ? `<div class="fiche-video" style="margin:22px 0;"><video controls preload="none" playsinline poster="${echapper(image)}" style="width:100%;height:auto;border-radius:12px;background:#000;" aria-label="Vidéo : ${echapper(b.titre)}"><source src="${video.src}" type="video/mp4"></video></div>`
@@ -404,34 +423,35 @@ async function rendreFicheAnnonce(b) {
           <div class="prix">${formaterPrix(b.prix)}</div>
           <h2>Contacter le propriétaire</h2>
           <div style="display:grid;gap:10px;margin-bottom:18px;">
-            <a href="/api/contacts/direct/${b.id}/whatsapp" target="_blank" rel="nofollow noopener" class="bouton bouton-primaire bouton-plein-largeur" style="background:#25D366;border-color:#25D366;color:#fff;">Écrire sur WhatsApp</a>
+            <a href="/api/contacts/direct/${b.id}/whatsapp" target="_blank" rel="nofollow noopener" class="bouton bouton-primaire bouton-plein-largeur" style="background:#25D366;border-color:#25D366;color:#101B2D;">Écrire sur WhatsApp</a>
             <a href="/api/contacts/direct/${b.id}/sms" rel="nofollow" class="bouton bouton-secondaire bouton-plein-largeur">Envoyer un SMS</a>
           </div>
           <div id="msg-contact-erreur"></div>
           <div id="msg-contact-succes"></div>
           <form id="form-contact" style="display:grid;gap:14px;">
             <div class="champ" style="margin:0;">
-              <label>Votre nom *</label>
-              <input type="text" name="nom" required placeholder="Prénom et nom">
+              <label for="contact-nom">Votre nom *</label>
+              <input type="text" id="contact-nom" name="nom" required placeholder="Prénom et nom">
             </div>
             <div class="champ" style="margin:0;">
-              <label>Votre e-mail *</label>
-              <input type="email" name="email" required placeholder="vous@exemple.com">
+              <label for="contact-email">Votre e-mail *</label>
+              <input type="email" id="contact-email" name="email" required placeholder="vous@exemple.com">
             </div>
             <div class="champ" style="margin:0;">
-              <label>Téléphone (optionnel)</label>
-              <input type="text" name="telephone" placeholder="+221 77 000 00 00">
+              <label for="contact-telephone">Téléphone (optionnel)</label>
+              <input type="text" id="contact-telephone" name="telephone" placeholder="+221 77 000 00 00">
             </div>
             <div class="champ" style="margin:0;">
-              <label>Votre message *</label>
-              <textarea name="message" rows="4" required placeholder="Bonjour, je suis intéressé(e) par ce bien..."></textarea>
+              <label for="contact-message">Votre message *</label>
+              <textarea id="contact-message" name="message" rows="4" required placeholder="Bonjour, je suis intéressé(e) par ce bien..."></textarea>
             </div>
             <button type="submit" class="bouton bouton-primaire bouton-plein-largeur" id="btn-envoyer-message">Envoyer le message</button>
           </form>
           <p class="aide centre" style="margin-top:14px;">Votre message est transmis au propriétaire. Aucune commission d'agence.</p>
         </div>
       </aside>
-    </div>`;
+    </div>
+    ${similairesHtml}`;
 
   const templateAnnonce = await obtenirTemplateAnnonce();
   return templateAnnonce
@@ -445,7 +465,7 @@ async function rendreFicheAnnonce(b) {
     .replace(/(<meta name="twitter:title" content=")[^"]*(">)/, `$1${echapper(titreSeo)}$2`)
     .replace(/(<meta name="twitter:description" content=")[^"]*(">)/, `$1${echapper(descSeo)}$2`)
     .replace(/(<meta name="twitter:image" content=")[^"]*(">)/, `$1${image}$2`)
-    .replace(/<\/head>/, `  <script type="application/ld+json">${jsonLd}</script>\n${jsonLdVideo ? `  <script type="application/ld+json">${jsonLdVideo}</script>\n` : ""}</head>`)
+    .replace(/<\/head>/, `  <script type="application/ld+json">${jsonLd}</script>\n  <script type="application/ld+json">${fil}</script>\n${jsonLdVideo ? `  <script type="application/ld+json">${jsonLdVideo}</script>\n` : ""}</head>`)
     .replace(/\n    Chargement...\n/, `\n${contenu}\n`);
 }
 

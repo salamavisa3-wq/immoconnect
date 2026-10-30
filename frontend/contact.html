@@ -37,12 +37,12 @@
     font-size: 0.72rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--or);
+    color: #8A6A12; /* or foncé : contraste AA sur fond blanc (var(--or) = 2,56) */
     margin-bottom: 14px;
   }
   .adresse { font-style: normal; font-size: 1rem; color: var(--texte); line-height: 1.6; }
   .lien-contact { font-size: 1rem; font-weight: 600; color: var(--bleu-nuit); display: inline-block; }
-  .lien-contact:hover { color: var(--terre); }
+  .lien-contact:hover { color: var(--terre-texte); }
   .tel-ligne { margin: 6px 0; }
   .grille-sites { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; max-width: 720px; margin: 0 auto; }
   @media (max-width: 720px) {
@@ -99,6 +99,7 @@
 </script>
 </head>
 <body>
+<a class="lien-evitement" href="#contenu">Aller au contenu</a>
 
 <header class="entete">
   <div class="conteneur barre">
@@ -115,6 +116,7 @@
     <a href="/inscription.html" class="bouton bouton-primaire">Publier une annonce</a>
   </div>
 </header>
+<main id="contenu">
 
 <section class="page-hero">
   <div class="conteneur">
@@ -153,12 +155,12 @@
     <div class="grille-sites">
       <a href="https://www.immothies-dakar.com" class="type-carte" target="_blank" rel="noopener">
         <div class="num">01</div>
-        <h4>Immothies Dakar</h4>
+        <h3>Immothies Dakar</h3>
         <p>Annonces et biens immobiliers en ligne : Thiès et le Sénégal.</p>
       </a>
       <a href="https://www.srvoyages.com" class="type-carte" target="_blank" rel="noopener">
         <div class="num">02</div>
-        <h4>SR Voyages</h4>
+        <h3>SR Voyages</h3>
         <p>Voyages, billets et visas au départ du Sénégal.</p>
       </a>
     </div>
@@ -176,6 +178,7 @@
   </div>
 </section>
 
+</main>
 <footer class="pied">
   <div class="conteneur">
     <div class="pied-grille">
@@ -185,7 +188,7 @@
         <address>Avenue El Hadji Malick Sy, Thiès<br><a href="tel:+221771437125">77 143 71 25</a> · <a href="tel:+221778678787">77 867 87 87</a><br><a href="mailto:contact@sakeurimmo.com">contact@sakeurimmo.com</a></address>
       </div>
       <div>
-        <h4>Acheter</h4>
+        <p class="pied-titre">Acheter</p>
         <ul>
           <li><a href="/categorie/terrains-a-vendre.html">Terrains à vendre</a></li>
           <li><a href="/categorie/villas-a-vendre.html">Villas à vendre</a></li>
@@ -196,7 +199,7 @@
         </ul>
       </div>
       <div>
-        <h4>Louer</h4>
+        <p class="pied-titre">Louer</p>
         <ul>
           <li><a href="/categorie/appartements-a-louer.html">Appartements à louer</a></li>
           <li><a href="/categorie/appartements-meubles.html">Appartements meublés</a></li>
@@ -207,7 +210,7 @@
         </ul>
       </div>
       <div>
-        <h4>SakeurImmo</h4>
+        <p class="pied-titre">SakeurImmo</p>
         <ul>
           <li><a href="/annonces.html">Toutes les annonces</a></li>
           <li><a href="/forfaits.html">Forfaits et tarifs</a></li>

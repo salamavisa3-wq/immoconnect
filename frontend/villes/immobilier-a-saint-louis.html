@@ -89,6 +89,7 @@
 </script>
 </head>
 <body>
+<a class="lien-evitement" href="#contenu">Aller au contenu</a>
 
 <header class="entete">
   <div class="conteneur barre">
@@ -105,6 +106,7 @@
     <a href="/inscription.html" class="bouton bouton-primaire">Publier une annonce</a>
   </div>
 </header>
+<main id="contenu">
 
 <section class="page-hero">
   <div class="conteneur">
@@ -115,6 +117,8 @@
 </section>
 <section class="section">
   <div class="conteneur">
+    
+    <h2 class="sr-only" id="titre-grille-annonces">Annonces disponibles</h2>
     
     <div id="grille-categorie" class="grille-annonces" data-ville="Saint-Louis" style="margin-top:30px;">
       <p>Chargement des annonces...</p>
@@ -191,18 +195,19 @@
       <h2>Autres villes</h2>
     </div>
     <div class="grille-types">
-      <a href="/villes/immobilier-a-dakar.html" class="type-carte"><div class="num">01</div><h4>Dakar</h4><p>Le premier marché immobilier du Sénégal.</p></a>
-      <a href="/villes/immobilier-a-thies.html" class="type-carte"><div class="num">02</div><h4>Thiès</h4><p>La ville en pleine croissance, prix accessibles.</p></a>
-      <a href="/villes/immobilier-a-saly.html" class="type-carte"><div class="num">03</div><h4>Saly</h4><p>Le spot balnéaire de la diaspora.</p></a>
-      <a href="/villes/immobilier-a-saint-louis.html" class="type-carte"><div class="num">04</div><h4>Saint-Louis</h4><p>Patrimoine et tourisme au nord.</p></a>
-      <a href="/villes/immobilier-a-touba.html" class="type-carte"><div class="num">05</div><h4>Touba</h4><p>Le foncier d'une ville en expansion.</p></a>
-      <a href="/villes/immobilier-a-mbour.html" class="type-carte"><div class="num">06</div><h4>Mbour</h4><p>Port ville de la Petite-Côte.</p></a>
-      <a href="/villes/immobilier-a-ziguinchor.html" class="type-carte"><div class="num">07</div><h4>Ziguinchor</h4><p>La Casamance, prix accessibles.</p></a>
-      <a href="/villes/immobilier-a-kaolack.html" class="type-carte"><div class="num">08</div><h4>Kaolack</h4><p>Carrefour commercial du centre.</p></a>
+      <a href="/villes/immobilier-a-dakar.html" class="type-carte"><div class="num">01</div><h3>Dakar</h3><p>Le premier marché immobilier du Sénégal.</p></a>
+      <a href="/villes/immobilier-a-thies.html" class="type-carte"><div class="num">02</div><h3>Thiès</h3><p>La ville en pleine croissance, prix accessibles.</p></a>
+      <a href="/villes/immobilier-a-saly.html" class="type-carte"><div class="num">03</div><h3>Saly</h3><p>Le spot balnéaire de la diaspora.</p></a>
+      <a href="/villes/immobilier-a-saint-louis.html" class="type-carte"><div class="num">04</div><h3>Saint-Louis</h3><p>Patrimoine et tourisme au nord.</p></a>
+      <a href="/villes/immobilier-a-touba.html" class="type-carte"><div class="num">05</div><h3>Touba</h3><p>Le foncier d'une ville en expansion.</p></a>
+      <a href="/villes/immobilier-a-mbour.html" class="type-carte"><div class="num">06</div><h3>Mbour</h3><p>Port ville de la Petite-Côte.</p></a>
+      <a href="/villes/immobilier-a-ziguinchor.html" class="type-carte"><div class="num">07</div><h3>Ziguinchor</h3><p>La Casamance, prix accessibles.</p></a>
+      <a href="/villes/immobilier-a-kaolack.html" class="type-carte"><div class="num">08</div><h3>Kaolack</h3><p>Carrefour commercial du centre.</p></a>
     </div>
   </div>
 </section>
 
+</main>
 <footer class="pied">
   <div class="conteneur">
     <div class="pied-grille">
@@ -212,7 +217,7 @@
         <address>Avenue El Hadji Malick Sy, Thiès<br><a href="tel:+221771437125">77 143 71 25</a> · <a href="tel:+221778678787">77 867 87 87</a><br><a href="mailto:contact@sakeurimmo.com">contact@sakeurimmo.com</a></address>
       </div>
       <div>
-        <h4>Acheter</h4>
+        <p class="pied-titre">Acheter</p>
         <ul>
           <li><a href="/categorie/terrains-a-vendre.html">Terrains à vendre</a></li>
           <li><a href="/categorie/villas-a-vendre.html">Villas à vendre</a></li>
@@ -223,7 +228,7 @@
         </ul>
       </div>
       <div>
-        <h4>Louer</h4>
+        <p class="pied-titre">Louer</p>
         <ul>
           <li><a href="/categorie/appartements-a-louer.html">Appartements à louer</a></li>
           <li><a href="/categorie/appartements-meubles.html">Appartements meublés</a></li>
@@ -234,7 +239,7 @@
         </ul>
       </div>
       <div>
-        <h4>SakeurImmo</h4>
+        <p class="pied-titre">SakeurImmo</p>
         <ul>
           <li><a href="/annonces.html">Toutes les annonces</a></li>
           <li><a href="/forfaits.html">Forfaits et tarifs</a></li>

@@ -63,7 +63,7 @@
     </div>
 
     <div class="carte-formulaire large" id="form-nouvelle-annonce" style="margin-left:0;">
-      <h3 class="mt-0">Publier une nouvelle annonce <a id="lien-upgrade" href="inscription.html" style="float:right;font-size:.78rem;font-weight:600;color:var(--terre);text-decoration:underline;">+ Augmenter mes places</a></h3>
+      <h3 class="mt-0">Publier une nouvelle annonce <a id="lien-upgrade" href="inscription.html" style="float:right;font-size:.78rem;font-weight:600;color: var(--terre-texte);text-decoration:underline;">+ Augmenter mes places</a></h3>
       <p class="aide" style="margin-bottom:20px;">Elle sera visible publiquement après validation par notre équipe (sous 24h).</p>
 
       <div id="zone-erreur-annonce"></div>
@@ -204,7 +204,7 @@ function majPlacesRestantes() {
   if (user && user.statut_compte === "actif" && quota > 0 && restantes <= 0) {
     bouton.disabled = true;
     notice.style.display = "block";
-    notice.innerHTML = `<div class="message-erreur">Vous avez utilisé toutes vos places (${quota} annonce${quota > 1 ? "s" : ""} active${quota > 1 ? "s" : ""}). Supprimez une annonce ou <a href="inscription.html" style="color:var(--terre);font-weight:600;">choisissez un forfait supérieur</a>.</div>`;
+    notice.innerHTML = `<div class="message-erreur">Vous avez utilisé toutes vos places (${quota} annonce${quota > 1 ? "s" : ""} active${quota > 1 ? "s" : ""}). Supprimez une annonce ou <a href="inscription.html" style="color: var(--terre-texte);font-weight:600;">choisissez un forfait supérieur</a>.</div>`;
   } else {
     notice.style.display = "none";
     if (!user || user.statut_compte !== "actif" || quota === 0) bouton.disabled = true;
@@ -345,7 +345,7 @@ async function chargerMessages() {
           <span style="font-size:0.78rem;color:var(--texte-clair);">${new Date(m.cree_le).toLocaleString("fr-FR")}</span>
         </div>
         <p style="font-size:0.82rem;color:var(--texte-clair);margin:4px 0 10px;">
-          Re : <a href="annonce.html?id=${m.bien_id}" style="color:var(--terre);">${escHtml(m.bien_titre)}</a> — ${escHtml(m.bien_ville)}
+          Re : <a href="annonce.html?id=${m.bien_id}" style="color: var(--terre-texte);">${escHtml(m.bien_titre)}</a> — ${escHtml(m.bien_ville)}
         </p>
         <p style="margin:0 0 14px;line-height:1.6;">${escHtml(m.message).replace(/\n/g, "<br>")}</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">

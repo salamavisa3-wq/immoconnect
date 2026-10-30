@@ -24,6 +24,7 @@
 <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
+<a class="lien-evitement" href="#contenu">Aller au contenu</a>
 
 <header class="entete">
   <div class="conteneur barre">
@@ -33,6 +34,7 @@
     <a href="/inscription.html" class="bouton bouton-primaire">Publier une annonce</a>
   </div>
 </header>
+<main id="contenu">
 
 <section class="section">
   <div class="conteneur" id="contenu-annonce">
@@ -117,7 +119,7 @@ async function chargerDetail() {
         <div style="margin-top:32px;background:var(--blanc);border:1px solid var(--sable-fonce);border-radius:8px;padding:30px;">
           <h3 style="margin-top:0;">Contacter le propriétaire</h3>
           <div style="display:grid;gap:10px;margin-bottom:18px;">
-            <a href="/api/contacts/direct/${b.id}/whatsapp" target="_blank" rel="nofollow noopener" class="bouton bouton-primaire bouton-plein-largeur" style="background:#25D366;border-color:#25D366;color:#fff;">Écrire sur WhatsApp</a>
+            <a href="/api/contacts/direct/${b.id}/whatsapp" target="_blank" rel="nofollow noopener" class="bouton bouton-primaire bouton-plein-largeur" style="background:#25D366;border-color:#25D366;color:#101B2D;">Écrire sur WhatsApp</a>
             <a href="/api/contacts/direct/${b.id}/sms" rel="nofollow" class="bouton bouton-secondaire bouton-plein-largeur">Envoyer un SMS</a>
           </div>
           <div id="msg-contact-erreur"></div>
@@ -126,20 +128,20 @@ async function chargerDetail() {
             <div class="grille-2" style="gap:14px;">
               <div class="champ" style="margin:0;">
                 <label>Votre nom *</label>
-                <input type="text" name="nom" required placeholder="Prénom et nom">
+                <input type="text" name="nom" required placeholder="Prénom et nom" aria-label="Votre nom">
               </div>
               <div class="champ" style="margin:0;">
                 <label>Votre e-mail *</label>
-                <input type="email" name="email" required placeholder="vous@exemple.com">
+                <input type="email" name="email" required placeholder="vous@exemple.com" aria-label="Votre e-mail">
               </div>
             </div>
             <div class="champ" style="margin:0;">
               <label>Téléphone (optionnel)</label>
-              <input type="text" name="telephone" placeholder="+221 77 000 00 00">
+              <input type="text" name="telephone" placeholder="+221 77 000 00 00" aria-label="Téléphone">
             </div>
             <div class="champ" style="margin:0;">
               <label>Votre message *</label>
-              <textarea name="message" rows="4" required placeholder="Bonjour, je suis intéressé(e) par ce bien..."></textarea>
+              <textarea name="message" rows="4" required placeholder="Bonjour, je suis intéressé(e) par ce bien..." aria-label="Votre message"></textarea>
             </div>
             <button type="submit" class="bouton bouton-primaire" id="btn-envoyer-message">Envoyer le message</button>
           </form>
@@ -180,6 +182,7 @@ document.addEventListener("submit", async (e) => {
 </script>
 
 <script src="/js/menu.js"></script>
+</main>
 <footer class="pied">
   <div class="conteneur">
     <div class="pied-grille">
@@ -189,7 +192,7 @@ document.addEventListener("submit", async (e) => {
         <address>Avenue El Hadji Malick Sy, Thiès<br><a href="tel:+221771437125">77 143 71 25</a> · <a href="tel:+221778678787">77 867 87 87</a><br><a href="mailto:contact@sakeurimmo.com">contact@sakeurimmo.com</a></address>
       </div>
       <div>
-        <h4>Acheter</h4>
+        <p class="pied-titre">Acheter</p>
         <ul>
           <li><a href="/categorie/terrains-a-vendre.html">Terrains à vendre</a></li>
           <li><a href="/categorie/villas-a-vendre.html">Villas à vendre</a></li>
@@ -200,7 +203,7 @@ document.addEventListener("submit", async (e) => {
         </ul>
       </div>
       <div>
-        <h4>Louer</h4>
+        <p class="pied-titre">Louer</p>
         <ul>
           <li><a href="/categorie/appartements-a-louer.html">Appartements à louer</a></li>
           <li><a href="/categorie/appartements-meubles.html">Appartements meublés</a></li>
@@ -211,7 +214,7 @@ document.addEventListener("submit", async (e) => {
         </ul>
       </div>
       <div>
-        <h4>SakeurImmo</h4>
+        <p class="pied-titre">SakeurImmo</p>
         <ul>
           <li><a href="/annonces.html">Toutes les annonces</a></li>
           <li><a href="/forfaits.html">Forfaits et tarifs</a></li>

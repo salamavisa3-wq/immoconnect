@@ -3,5 +3,4 @@ Allow: /
 Disallow: /api/contacts/direct/
 
 Sitemap: https://sakeurimmo.com/sitemap.xml
-Link: <https://sakeurimmo.com/llms.txt>; rel="alternate"; type="text/plain"
 

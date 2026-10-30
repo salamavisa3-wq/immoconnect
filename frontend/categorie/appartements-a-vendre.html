@@ -89,6 +89,7 @@
 </script>
 </head>
 <body>
+<a class="lien-evitement" href="#contenu">Aller au contenu</a>
 
 <header class="entete">
   <div class="conteneur barre">
@@ -104,6 +105,7 @@
     <a href="/inscription.html" class="bouton bouton-primaire">Publier une annonce</a>
   </div>
 </header>
+<main id="contenu">
 
 <section class="page-hero">
   <div class="conteneur">
@@ -114,6 +116,8 @@
 </section>
 <section class="section">
   <div class="conteneur">
+    
+    <h2 class="sr-only" id="titre-grille-annonces">Annonces disponibles</h2>
     
     <div id="grille-categorie" class="grille-annonces" data-type="appartement_vente" style="margin-top:30px;">
       <p>Chargement des annonces...</p>
@@ -159,23 +163,24 @@
       <p>Explorez les autres types de biens au Sénégal.</p>
     </div>
     <div class="grille-types">
-      <a href="/categorie/terrains-a-vendre.html" class="type-carte"><div class="num">01</div><h4>Terrains à vendre au Sénégal</h4><p>Annonces publiées directement par les propriétaires.</p></a>
-      <a href="/categorie/appartements-a-vendre.html" class="type-carte"><div class="num">02</div><h4>Appartements à vendre au Sénégal</h4><p>Annonces publiées directement par les propriétaires.</p></a>
-      <a href="/categorie/appartements-a-louer.html" class="type-carte"><div class="num">03</div><h4>Appartements à louer au Sénégal</h4><p>Annonces publiées directement par les propriétaires.</p></a>
-      <a href="/categorie/appartements-meubles.html" class="type-carte"><div class="num">04</div><h4>Appartements meublés à louer au Sénégal</h4><p>Annonces publiées directement par les propriétaires.</p></a>
-      <a href="/categorie/maisons-a-vendre.html" class="type-carte"><div class="num">05</div><h4>Maisons à vendre au Sénégal</h4><p>Annonces publiées directement par les propriétaires.</p></a>
-      <a href="/categorie/maisons-a-louer.html" class="type-carte"><div class="num">06</div><h4>Maisons à louer au Sénégal</h4><p>Annonces publiées directement par les propriétaires.</p></a>
-      <a href="/categorie/villas-a-vendre.html" class="type-carte"><div class="num">07</div><h4>Villas à vendre au Sénégal</h4><p>Annonces publiées directement par les propriétaires.</p></a>
-      <a href="/categorie/villas-a-louer.html" class="type-carte"><div class="num">08</div><h4>Villas à louer au Sénégal</h4><p>Annonces publiées directement par les propriétaires.</p></a>
-      <a href="/categorie/commerces-a-vendre.html" class="type-carte"><div class="num">09</div><h4>Commerces à vendre au Sénégal</h4><p>Boutiques, magasins et locaux d'activité.</p></a>
-      <a href="/categorie/commerces-a-louer.html" class="type-carte"><div class="num">10</div><h4>Commerces à louer au Sénégal</h4><p>Locaux commerciaux pour votre activité.</p></a>
-      <a href="/categorie/terrains-a-louer.html" class="type-carte"><div class="num">11</div><h4>Terrains à louer au Sénégal</h4><p>Terrains pour projet ou activité.</p></a>
-      <a href="/categorie/immeubles-a-vendre.html" class="type-carte"><div class="num">12</div><h4>Immeubles à vendre au Sénégal</h4><p>Immeubles de rapport et investissements.</p></a>
-      <a href="/categorie/immeubles-a-louer.html" class="type-carte"><div class="num">13</div><h4>Immeubles à louer au Sénégal</h4><p>Immeubles et locaux d'activité.</p></a>
+      <a href="/categorie/terrains-a-vendre.html" class="type-carte"><div class="num">01</div><h3>Terrains à vendre au Sénégal</h3><p>Annonces publiées directement par les propriétaires.</p></a>
+      <a href="/categorie/appartements-a-vendre.html" class="type-carte"><div class="num">02</div><h3>Appartements à vendre au Sénégal</h3><p>Annonces publiées directement par les propriétaires.</p></a>
+      <a href="/categorie/appartements-a-louer.html" class="type-carte"><div class="num">03</div><h3>Appartements à louer au Sénégal</h3><p>Annonces publiées directement par les propriétaires.</p></a>
+      <a href="/categorie/appartements-meubles.html" class="type-carte"><div class="num">04</div><h3>Appartements meublés à louer au Sénégal</h3><p>Annonces publiées directement par les propriétaires.</p></a>
+      <a href="/categorie/maisons-a-vendre.html" class="type-carte"><div class="num">05</div><h3>Maisons à vendre au Sénégal</h3><p>Annonces publiées directement par les propriétaires.</p></a>
+      <a href="/categorie/maisons-a-louer.html" class="type-carte"><div class="num">06</div><h3>Maisons à louer au Sénégal</h3><p>Annonces publiées directement par les propriétaires.</p></a>
+      <a href="/categorie/villas-a-vendre.html" class="type-carte"><div class="num">07</div><h3>Villas à vendre au Sénégal</h3><p>Annonces publiées directement par les propriétaires.</p></a>
+      <a href="/categorie/villas-a-louer.html" class="type-carte"><div class="num">08</div><h3>Villas à louer au Sénégal</h3><p>Annonces publiées directement par les propriétaires.</p></a>
+      <a href="/categorie/commerces-a-vendre.html" class="type-carte"><div class="num">09</div><h3>Commerces à vendre au Sénégal</h3><p>Boutiques, magasins et locaux d'activité.</p></a>
+      <a href="/categorie/commerces-a-louer.html" class="type-carte"><div class="num">10</div><h3>Commerces à louer au Sénégal</h3><p>Locaux commerciaux pour votre activité.</p></a>
+      <a href="/categorie/terrains-a-louer.html" class="type-carte"><div class="num">11</div><h3>Terrains à louer au Sénégal</h3><p>Terrains pour projet ou activité.</p></a>
+      <a href="/categorie/immeubles-a-vendre.html" class="type-carte"><div class="num">12</div><h3>Immeubles à vendre au Sénégal</h3><p>Immeubles de rapport et investissements.</p></a>
+      <a href="/categorie/immeubles-a-louer.html" class="type-carte"><div class="num">13</div><h3>Immeubles à louer au Sénégal</h3><p>Immeubles et locaux d'activité.</p></a>
     </div>
   </div>
 </section>
 
+</main>
 <footer class="pied">
   <div class="conteneur">
     <div class="pied-grille">
@@ -185,7 +190,7 @@
         <address>Avenue El Hadji Malick Sy, Thiès<br><a href="tel:+221771437125">77 143 71 25</a> · <a href="tel:+221778678787">77 867 87 87</a><br><a href="mailto:contact@sakeurimmo.com">contact@sakeurimmo.com</a></address>
       </div>
       <div>
-        <h4>Acheter</h4>
+        <p class="pied-titre">Acheter</p>
         <ul>
           <li><a href="/categorie/terrains-a-vendre.html">Terrains à vendre</a></li>
           <li><a href="/categorie/villas-a-vendre.html">Villas à vendre</a></li>
@@ -196,7 +201,7 @@
         </ul>
       </div>
       <div>
-        <h4>Louer</h4>
+        <p class="pied-titre">Louer</p>
         <ul>
           <li><a href="/categorie/appartements-a-louer.html">Appartements à louer</a></li>
           <li><a href="/categorie/appartements-meubles.html">Appartements meublés</a></li>
@@ -207,7 +212,7 @@
         </ul>
       </div>
       <div>
-        <h4>SakeurImmo</h4>
+        <p class="pied-titre">SakeurImmo</p>
         <ul>
           <li><a href="/annonces.html">Toutes les annonces</a></li>
           <li><a href="/forfaits.html">Forfaits et tarifs</a></li>

@@ -66,10 +66,10 @@
   .acc-fiche .infos { padding: 14px 18px 18px; }
   .acc-fiche .ref { font-family: var(--police-mono); font-size:.7rem; color: var(--texte-clair); }
   .acc-fiche .titre { font-family: var(--police-titre); font-size:1.02rem; font-weight:600; line-height:1.25; margin: 4px 0 8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-  .acc-fiche .prix { font-family: var(--police-titre); font-size:1.45rem; color: var(--terre); font-weight:600; }
+  .acc-fiche .prix { font-family: var(--police-titre); font-size:1.45rem; color: var(--terre-texte); font-weight:600; }
   .acc-fiche-2 .titre { font-size:.9rem; }
   .acc-fiche-2 .prix { font-size:1.15rem; }
-  .acc-sceau { position:absolute; top:14px; left:14px; width:62px; height:62px; border-radius:50%; background: rgba(243,236,219,.94); border:2px solid var(--terre); color: var(--terre); display:flex; align-items:center; justify-content:center; font-family: var(--police-titre); font-weight:700; font-size:.78rem; text-align:center; line-height:1.1; transform: rotate(-9deg); box-shadow: 0 0 0 4px rgba(243,236,219,.4); }
+  .acc-sceau { position:absolute; top:14px; left:14px; width:62px; height:62px; border-radius:50%; background: rgba(243,236,219,.94); border:2px solid var(--terre); color: var(--terre-texte); display:flex; align-items:center; justify-content:center; font-family: var(--police-titre); font-weight:700; font-size:.78rem; text-align:center; line-height:1.1; transform: rotate(-9deg); box-shadow: 0 0 0 4px rgba(243,236,219,.4); }
   .acc-vide { background: var(--bleu-nuit-clair); }
   .acc-vitrine-vide { display:none; }
 
@@ -83,7 +83,7 @@
   .acc-garanties { background: var(--sable-fonce); border-bottom: 1px solid rgba(37,31,23,.08); }
   .acc-garanties ul { list-style:none; margin:0; padding: 26px 0; display:grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
   .acc-garanties li { display:flex; gap:14px; align-items:flex-start; }
-  .acc-garanties svg { flex:none; width:30px; height:30px; color: var(--terre); }
+  .acc-garanties svg { flex:none; width:30px; height:30px; color: var(--terre-texte); }
   .acc-garanties strong { display:block; font-size:.98rem; line-height:1.3; }
   .acc-garanties span { display:block; margin-top:2px; font-size:.84rem; line-height:1.4; color: var(--texte-clair); }
 
@@ -92,7 +92,7 @@
   .acc-tete { display:flex; justify-content:space-between; align-items:flex-end; gap: 24px; margin-bottom: 40px; flex-wrap:wrap; }
   .acc-tete h2 { font-size: clamp(1.9rem, 3.4vw, 2.7rem); font-weight:500; letter-spacing:-.015em; line-height:1.1; margin:0; max-width: 20ch; }
   .acc-tete p { margin: 10px 0 0; color: var(--texte-clair); max-width: 52ch; }
-  .acc-tete .voir { font-weight:600; color: var(--terre); border-bottom: 2px solid currentColor; padding-bottom:2px; white-space:nowrap; }
+  .acc-tete .voir { font-weight:600; color: var(--terre-texte); border-bottom: 2px solid currentColor; padding-bottom:2px; white-space:nowrap; }
   .acc-tete .voir:hover { color: var(--bleu-nuit); }
 
   /* Annonces récentes */
@@ -132,7 +132,7 @@
   .acc-cats h3 { font-size:1.35rem; font-weight:600; margin: 0 0 8px; padding-bottom: 14px; border-bottom: 2px solid var(--bleu-nuit); }
   .acc-cats ul { list-style:none; margin:0; padding:0; }
   .acc-cats li a { display:flex; align-items:baseline; justify-content:space-between; gap:16px; padding: 15px 4px; border-bottom: 1px solid var(--sable-fonce); transition: padding .2s, color .15s; }
-  .acc-cats li a:hover { padding-left: 12px; color: var(--terre); }
+  .acc-cats li a:hover { padding-left: 12px; color: var(--terre-texte); }
   .acc-cats li strong { font-weight:600; }
   .acc-cats li small { color: var(--texte-clair); font-size:.84rem; text-align:right; }
 
@@ -148,7 +148,7 @@
   /* Diaspora */
   .acc-diaspora { background: var(--terre); color:#fff; border-radius: 14px; padding: 52px 56px; display:grid; grid-template-columns: 1.4fr auto; gap: 32px; align-items:center; }
   .acc-diaspora h2 { font-size: clamp(1.7rem, 3vw, 2.4rem); font-weight:500; line-height:1.12; margin:0 0 12px; max-width: 22ch; }
-  .acc-diaspora p { margin:0; max-width: 54ch; color: rgba(255,255,255,.88); }
+  .acc-diaspora p { margin:0; max-width: 54ch; color: #fff; }
   .acc-diaspora .bouton { background: var(--sable); color: var(--bleu-nuit); padding: 14px 28px; }
   .acc-diaspora .bouton:hover { background:#fff; }
 
@@ -156,7 +156,7 @@
   .acc-guides { list-style:none; margin:0; padding:0; display:grid; grid-template-columns: 1fr 1fr; gap: 0 72px; }
   .acc-guides a { display:block; padding: 22px 4px; border-bottom: 1px solid var(--sable-fonce); }
   .acc-guides h3 { font-size:1.2rem; font-weight:600; margin:0 0 6px; transition: color .15s; }
-  .acc-guides a:hover h3 { color: var(--terre); }
+  .acc-guides a:hover h3 { color: var(--terre-texte); }
   .acc-guides p { margin:0; color: var(--texte-clair); font-size:.93rem; }
 
   /* Tarifs */
@@ -176,7 +176,7 @@
   .acc-plan.fort .bouton { background: var(--terre); }
   .acc-plan.fort .bouton:hover { background: var(--terre-clair); }
   .acc-note-tarif { margin-top: 28px; text-align:center; color: var(--texte-clair); }
-  .acc-note-tarif a { color: var(--terre); font-weight:600; border-bottom: 1px solid currentColor; }
+  .acc-note-tarif a { color: var(--terre-texte); font-weight:600; border-bottom: 1px solid currentColor; }
 
   /* Appel final */
   .acc-final { background: var(--bleu-nuit); color: var(--sable); padding: 84px 0; text-align:center; position:relative; overflow:hidden; }
@@ -217,6 +217,7 @@
 </style>
 </head>
 <body>
+<a class="lien-evitement" href="#contenu">Aller au contenu</a>
 
 <header class="entete">
   <div class="conteneur barre">
@@ -234,7 +235,7 @@
   </div>
 </header>
 
-<main>
+<main id="contenu">
 <section class="acc-hero">
   <div class="conteneur acc-hero-grille">
     <div>
@@ -465,7 +466,7 @@
         <address>Avenue El Hadji Malick Sy, Thiès<br><a href="tel:+221771437125">77 143 71 25</a> · <a href="tel:+221778678787">77 867 87 87</a><br><a href="mailto:contact@sakeurimmo.com">contact@sakeurimmo.com</a></address>
       </div>
       <div>
-        <h4>Acheter</h4>
+        <p class="pied-titre">Acheter</p>
         <ul>
           <li><a href="/categorie/terrains-a-vendre.html">Terrains à vendre</a></li>
           <li><a href="/categorie/villas-a-vendre.html">Villas à vendre</a></li>
@@ -476,7 +477,7 @@
         </ul>
       </div>
       <div>
-        <h4>Louer</h4>
+        <p class="pied-titre">Louer</p>
         <ul>
           <li><a href="/categorie/appartements-a-louer.html">Appartements à louer</a></li>
           <li><a href="/categorie/appartements-meubles.html">Appartements meublés</a></li>
@@ -487,7 +488,7 @@
         </ul>
       </div>
       <div>
-        <h4>SakeurImmo</h4>
+        <p class="pied-titre">SakeurImmo</p>
         <ul>
           <li><a href="/annonces.html">Toutes les annonces</a></li>
           <li><a href="/forfaits.html">Forfaits et tarifs</a></li>

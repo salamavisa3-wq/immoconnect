@@ -49,6 +49,7 @@
 </script>
 </head>
 <body>
+<a class="lien-evitement" href="#contenu">Aller au contenu</a>
 
 <header class="entete">
   <div class="conteneur barre">
@@ -58,6 +59,7 @@
     <a href="inscription.html" class="bouton bouton-primaire">Publier une annonce</a>
   </div>
 </header>
+<main id="contenu">
 
 <section class="page-hero">
   <div class="conteneur">
@@ -73,7 +75,7 @@
       <div class="grille-2">
         <div class="champ">
           <label>Type de bien</label>
-          <select name="type">
+          <select name="type" aria-label="Type de bien">
             <option value="">Tous les types</option>
             <option value="terrain">Terrain</option>
             <option value="appartement_vente">Appartement à vendre</option>
@@ -92,17 +94,17 @@
         </div>
         <div class="champ">
           <label>Ville</label>
-          <input type="text" name="ville" placeholder="Ex : Dakar, Touba...">
+          <input type="text" name="ville" placeholder="Ex : Dakar, Touba..." aria-label="Ville">
         </div>
       </div>
       <div class="grille-2">
         <div class="champ">
           <label>Prix minimum (FCFA)</label>
-          <input type="number" name="prix_min" min="0">
+          <input type="number" name="prix_min" min="0" aria-label="Prix minimum (FCFA)">
         </div>
         <div class="champ">
           <label>Prix maximum (FCFA)</label>
-          <input type="number" name="prix_max" min="0">
+          <input type="number" name="prix_max" min="0" aria-label="Prix maximum (FCFA)">
         </div>
       </div>
       <button type="submit" class="bouton bouton-primaire">Filtrer</button>
@@ -151,6 +153,7 @@
   </div>
 </section>
 
+</main>
 <footer class="pied">
   <div class="conteneur">
     <div class="pied-grille">
@@ -160,7 +163,7 @@
         <address>Avenue El Hadji Malick Sy, Thiès<br><a href="tel:+221771437125">77 143 71 25</a> · <a href="tel:+221778678787">77 867 87 87</a><br><a href="mailto:contact@sakeurimmo.com">contact@sakeurimmo.com</a></address>
       </div>
       <div>
-        <h4>Acheter</h4>
+        <p class="pied-titre">Acheter</p>
         <ul>
           <li><a href="/categorie/terrains-a-vendre.html">Terrains à vendre</a></li>
           <li><a href="/categorie/villas-a-vendre.html">Villas à vendre</a></li>
@@ -171,7 +174,7 @@
         </ul>
       </div>
       <div>
-        <h4>Louer</h4>
+        <p class="pied-titre">Louer</p>
         <ul>
           <li><a href="/categorie/appartements-a-louer.html">Appartements à louer</a></li>
           <li><a href="/categorie/appartements-meubles.html">Appartements meublés</a></li>
@@ -182,7 +185,7 @@
         </ul>
       </div>
       <div>
-        <h4>SakeurImmo</h4>
+        <p class="pied-titre">SakeurImmo</p>
         <ul>
           <li><a href="/annonces.html">Toutes les annonces</a></li>
           <li><a href="/forfaits.html">Forfaits et tarifs</a></li>
@@ -214,7 +217,7 @@
 <script>
 async function chargerAnnonces(params = {}) {
   const grille = document.getElementById("grille-resultats");
-  grille.innerHTML = "<p>Chargement des annonces...</p>";
+  if (!grille.querySelector(".annonce-carte")) grille.innerHTML = "<p>Chargement des annonces...</p>"; // grille déjà rendue par le serveur : on ne la vide pas (évite le décalage de mise en page)
 
   const query = new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v))).toString();
 
@@ -265,7 +268,7 @@ function carteAnnonce(b) {
         ${image}
       </div>
       <div class="annonce-corps">
-        <h4>${b.titre}</h4>
+        <h3>${b.titre}</h3>
         <div class="annonce-lieu">${b.quartier ? b.quartier + ", " : ""}${b.ville}</div>
         <div class="annonce-prix">${formaterPrix(b.prix)}</div>
         <div class="annonce-carac">
