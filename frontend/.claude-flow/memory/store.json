@@ -1,0 +1,59 @@
+{
+  "entries": {
+    "cmd-1792799204660": {
+      "key": "cmd-1792799204660",
+      "value": "{\"command\":\"cd\",\"exitCode\":0,\"success\":true}",
+      "namespace": "commands",
+      "storedAt": "2026-10-23T23:46:44.660Z",
+      "lastAccessed": "2026-10-23T23:46:44.660Z",
+      "accessCount": 0,
+      "expiresAt": "2026-11-22T23:46:44.660Z"
+    },
+    "cmd-1792799256670": {
+      "key": "cmd-1792799256670",
+      "value": "{\"command\":\"cd\",\"exitCode\":0,\"success\":true}",
+      "namespace": "commands",
+      "storedAt": "2026-10-23T23:47:36.670Z",
+      "lastAccessed": "2026-10-23T23:47:36.670Z",
+      "accessCount": 0,
+      "expiresAt": "2026-11-22T23:47:36.670Z"
+    },
+    "cmd-1792800627783": {
+      "key": "cmd-1792800627783",
+      "value": "{\"command\":\"cd\",\"exitCode\":0,\"success\":true}",
+      "namespace": "commands",
+      "storedAt": "2026-10-24T00:10:27.783Z",
+      "lastAccessed": "2026-10-24T00:10:27.783Z",
+      "accessCount": 0,
+      "expiresAt": "2026-11-23T00:10:27.783Z"
+    },
+    "cmd-1792800731665": {
+      "key": "cmd-1792800731665",
+      "value": "{\"command\":\"cd\",\"exitCode\":0,\"success\":true}",
+      "namespace": "commands",
+      "storedAt": "2026-10-24T00:12:11.665Z",
+      "lastAccessed": "2026-10-24T00:12:11.665Z",
+      "accessCount": 0,
+      "expiresAt": "2026-11-23T00:12:11.665Z"
+    },
+    "cmd-1792800762808": {
+      "key": "cmd-1792800762808",
+      "value": "{\"command\":\"cd\",\"exitCode\":0,\"success\":true}",
+      "namespace": "commands",
+      "storedAt": "2026-10-24T00:12:42.808Z",
+      "lastAccessed": "2026-10-24T00:12:42.808Z",
+      "accessCount": 0,
+      "expiresAt": "2026-11-23T00:12:42.808Z"
+    },
+    "cmd-1792800796676": {
+      "key": "cmd-1792800796676",
+      "value": "{\"command\":\"cd\",\"exitCode\":0,\"success\":true}",
+      "namespace": "commands",
+      "storedAt": "2026-10-24T00:13:16.676Z",
+      "lastAccessed": "2026-10-24T00:13:16.676Z",
+      "accessCount": 0,
+      "expiresAt": "2026-11-23T00:13:16.676Z"
+    }
+  },
+  "version": "3.0.0"
+}

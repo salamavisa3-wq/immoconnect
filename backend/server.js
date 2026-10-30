@@ -157,6 +157,8 @@ const VILLES_SLUG_NOM = {
   "immobilier-a-mbour": "Mbour",
   "immobilier-a-ziguinchor": "Ziguinchor",
   "immobilier-a-kaolack": "Kaolack",
+  "immobilier-a-diass": "Diass",
+  "immobilier-a-nguekhokh": "Nguékhokh",
 };
 
 // Carte annonce côté serveur (miroir de la fonction JS carteAnnonce)
@@ -321,6 +323,12 @@ function coupeAuMot(txt, max) {
   return txt.slice(0, max).replace(/\s+\S*$/, "") + "…";
 }
 
+// Vidéos hébergées dans frontend/videos, rattachées à une annonce par son id.
+// Rendu côté serveur : lecteur natif + VideoObject JSON-LD sur la fiche.
+const VIDEOS_ANNONCES = {
+  18: { src: "/videos/terrain-nguekhokh-2-3-ha.mp4", duree: "PT1M10S", date: "2026-10-30" },
+};
+
 async function rendreFicheAnnonce(b) {
   const typeTxt = LIBELLES_TYPE[b.type_bien] || b.type_bien;
   const transactionTxt = b.transaction_type === "vente" ? "à vendre" : "à louer";
@@ -355,6 +363,24 @@ async function rendreFicheAnnonce(b) {
     const sim = lignes.map((x) => ({ ...x, images: JSON.parse(x.images || "[]") }));
     if (sim.length) similairesHtml = `<section class="fiche-similaires" aria-labelledby="titre-similaires"><h2 id="titre-similaires">Annonces similaires</h2><div class="grille-annonces">${sim.map(carteAnnonceHtml).join("")}</div></section>`;
   } catch (e) { console.error("Annonces similaires indisponibles :", e.message); }
+  const video = VIDEOS_ANNONCES[b.id];
+  const videoHtml = video
+    ? `<div class="fiche-video" style="margin:22px 0;"><video controls preload="none" playsinline poster="${echapper(image)}" style="width:100%;height:auto;border-radius:12px;background:#000;" aria-label="Vidéo : ${echapper(b.titre)}"><source src="${video.src}" type="video/mp4"></video></div>`
+    : "";
+  const jsonLdVideo = video
+    ? JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        "@id": `${canonicalUrl}#video`,
+        name: b.titre,
+        description: b.description ? b.description.slice(0, 300).replace(/\n/g, " ") : b.titre,
+        thumbnailUrl: image,
+        uploadDate: video.date,
+        duration: video.duree,
+        contentUrl: `https://sakeurimmo.com${video.src}`,
+        inLanguage: "fr-SN",
+      })
+    : "";
 
   const pinSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>';
   const urlImage = (img) => echapper(img.startsWith("http") ? img : `https://sakeurimmo.com${img}`);
@@ -381,6 +407,7 @@ async function rendreFicheAnnonce(b) {
       <div>
         ${image ? `<div class="fiche-galerie"><img id="photo-principale" class="principale" src="${echapper(image)}" alt="${altText}"></div>` : ""}
         ${vignettesHtml}
+        ${videoHtml}
         <div class="fiche-ref">RÉF. TF-${String(b.id).padStart(6, "0")}</div>
         <h1 style="font-size:clamp(1.8rem,3.4vw,2.6rem);font-weight:500;letter-spacing:-.02em;margin-bottom:12px;">${echapper(b.titre)}</h1>
         <p class="fiche-lieu">${pinSvg}${echapper(lieuTxt)}</p>
@@ -395,6 +422,10 @@ async function rendreFicheAnnonce(b) {
           <span class="transaction">${b.transaction_type === "vente" ? "À vendre" : "À louer"}</span>
           <div class="prix">${formaterPrix(b.prix)}</div>
           <h2>Contacter le propriétaire</h2>
+          <div style="display:grid;gap:10px;margin-bottom:18px;">
+            <a href="/api/contacts/direct/${b.id}/whatsapp" target="_blank" rel="nofollow noopener" class="bouton bouton-primaire bouton-plein-largeur" style="background:#25D366;border-color:#25D366;color:#fff;">Écrire sur WhatsApp</a>
+            <a href="/api/contacts/direct/${b.id}/sms" rel="nofollow" class="bouton bouton-secondaire bouton-plein-largeur">Envoyer un SMS</a>
+          </div>
           <div id="msg-contact-erreur"></div>
           <div id="msg-contact-succes"></div>
           <form id="form-contact" style="display:grid;gap:14px;">
@@ -434,7 +465,7 @@ async function rendreFicheAnnonce(b) {
     .replace(/(<meta name="twitter:title" content=")[^"]*(">)/, `$1${echapper(titreSeo)}$2`)
     .replace(/(<meta name="twitter:description" content=")[^"]*(">)/, `$1${echapper(descSeo)}$2`)
     .replace(/(<meta name="twitter:image" content=")[^"]*(">)/, `$1${image}$2`)
-    .replace(/<\/head>/, `  <script type="application/ld+json">${jsonLd}</script>\n  <script type="application/ld+json">${fil}</script>\n</head>`)
+    .replace(/<\/head>/, `  <script type="application/ld+json">${jsonLd}</script>\n  <script type="application/ld+json">${fil}</script>\n${jsonLdVideo ? `  <script type="application/ld+json">${jsonLdVideo}</script>\n` : ""}</head>`)
     .replace(/\n    Chargement...\n/, `\n${contenu}\n`);
 }
 
@@ -600,6 +631,8 @@ app.get("/sitemap.xml", async (req, res) => {
       "immobilier-a-mbour",
       "immobilier-a-ziguinchor",
       "immobilier-a-kaolack",
+      "immobilier-a-diass",
+      "immobilier-a-nguekhokh",
     ]
       // ville stockée en LIKE côté listerBiensPublies (ex. "Saly Portudal" doit matcher "Saly") :
       // même logique ici, une correspondance partielle suffit à garder la page indexée.
@@ -617,6 +650,7 @@ app.get("/sitemap.xml", async (req, res) => {
       "maison-a-vendre-mboro",
       "terrain-agricole-a-vendre-kedougou",
       "immeuble-de-rapport-a-vendre-thies",
+      "terrain-a-vendre-nguekhokh",
     ].map((slug) => ({
       loc: `https://sakeurimmo.com/blog/${slug}.html`,
       lastmod: aujourdHui,
