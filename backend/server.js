@@ -423,27 +423,27 @@ async function rendreFicheAnnonce(b) {
           <div class="prix">${formaterPrix(b.prix)}</div>
           <h2>Contacter le propriétaire</h2>
           <div style="display:grid;gap:10px;margin-bottom:18px;">
-            <a href="/api/contacts/direct/${b.id}/whatsapp" target="_blank" rel="nofollow noopener" class="bouton bouton-primaire bouton-plein-largeur" style="background:#25D366;border-color:#25D366;color:#fff;">Écrire sur WhatsApp</a>
+            <a href="/api/contacts/direct/${b.id}/whatsapp" target="_blank" rel="nofollow noopener" class="bouton bouton-primaire bouton-plein-largeur" style="background:#25D366;border-color:#25D366;color:#101B2D;">Écrire sur WhatsApp</a>
             <a href="/api/contacts/direct/${b.id}/sms" rel="nofollow" class="bouton bouton-secondaire bouton-plein-largeur">Envoyer un SMS</a>
           </div>
           <div id="msg-contact-erreur"></div>
           <div id="msg-contact-succes"></div>
           <form id="form-contact" style="display:grid;gap:14px;">
             <div class="champ" style="margin:0;">
-              <label>Votre nom *</label>
-              <input type="text" name="nom" required placeholder="Prénom et nom">
+              <label for="contact-nom">Votre nom *</label>
+              <input type="text" id="contact-nom" name="nom" required placeholder="Prénom et nom">
             </div>
             <div class="champ" style="margin:0;">
-              <label>Votre e-mail *</label>
-              <input type="email" name="email" required placeholder="vous@exemple.com">
+              <label for="contact-email">Votre e-mail *</label>
+              <input type="email" id="contact-email" name="email" required placeholder="vous@exemple.com">
             </div>
             <div class="champ" style="margin:0;">
-              <label>Téléphone (optionnel)</label>
-              <input type="text" name="telephone" placeholder="+221 77 000 00 00">
+              <label for="contact-telephone">Téléphone (optionnel)</label>
+              <input type="text" id="contact-telephone" name="telephone" placeholder="+221 77 000 00 00">
             </div>
             <div class="champ" style="margin:0;">
-              <label>Votre message *</label>
-              <textarea name="message" rows="4" required placeholder="Bonjour, je suis intéressé(e) par ce bien..."></textarea>
+              <label for="contact-message">Votre message *</label>
+              <textarea id="contact-message" name="message" rows="4" required placeholder="Bonjour, je suis intéressé(e) par ce bien..."></textarea>
             </div>
             <button type="submit" class="bouton bouton-primaire bouton-plein-largeur" id="btn-envoyer-message">Envoyer le message</button>
           </form>
