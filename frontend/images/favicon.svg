@@ -1,4 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <circle cx="32" cy="32" r="30" fill="#101B2D"/>
-  <circle cx="32" cy="32" r="9" fill="#C89B3C"/>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="11" fill="#101B2D"/><g transform="translate(6 6) scale(.75)"><defs><linearGradient id="sir" x1="0" y1="6" x2="0" y2="22" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E8955C"/><stop offset="1" stop-color="#B5541F"/></linearGradient><linearGradient id="sim" x1="0" y1="22" x2="0" y2="42" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#E6BE5E"/><stop offset="1" stop-color="#C89B3C"/></linearGradient></defs><path d="M24 5.5 43.5 22.5H4.5Z" fill="url(#sir)" stroke="url(#sir)" stroke-width="2" stroke-linejoin="round"/><path fill-rule="evenodd" fill="url(#sim)" d="M9.5 23.5H38.5V39.5a2.5 2.5 0 0 1-2.5 2.5H12a2.5 2.5 0 0 1-2.5-2.5Z M24 26.3a3.4 3.4 0 0 1 1.6 6.4L26.9 38.6h-5.8l1.3-5.9A3.4 3.4 0 0 1 24 26.3Z"/><path d="M9.5 23.5H38.5V25.6H9.5Z" fill="#000" opacity=".16"/></g></svg>
