@@ -101,6 +101,9 @@ textarea:focus-visible, summary:focus-visible { outline: 3px solid var(--or); ou
 .logo .mot b { color: var(--or); font-weight: 700; }
 @media (max-width: 360px) { .logo { font-size: 1.2rem; gap: 7px; } .logo .pastille { width: 28px; height: 28px; } }
 @media (max-width: 330px) { .logo { font-size: 1.1rem; } .logo .pastille { width: 26px; height: 26px; } }
+/* Bouton « Publier une annonce » du bandeau : une seule ligne ; libellé court (« Publier ») sur mobile (<= 560 px) et sur la plage 861-980 px où le menu complet est affiché ; le nom complet reste lu par les lecteurs d'écran (aria-label). */
+.entete .barre > .bouton { white-space: nowrap; }
+@media (max-width: 560px), (min-width: 861px) and (max-width: 980px) { .entete .cta-suite { display: none; } }
 .nav { display: flex; gap: 28px; align-items: center; }
 .nav a {
   font-size: 0.92rem;
