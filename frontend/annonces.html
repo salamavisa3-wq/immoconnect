@@ -257,24 +257,24 @@ function carteAnnonce(b) {
   const enAvant = b.mise_en_avant === 1 &&
     (!b.mise_en_avant_jusqu_au || new Date(b.mise_en_avant_jusqu_au) > new Date());
   const image = b.images && b.images[0]
-    ? `<img src="${window.location.hostname === 'localhost' ? 'http://localhost:4000' : ''}${b.images[0]}" alt="${b.titre}">`
+    ? `<img src="${esc((window.location.hostname === 'localhost' ? 'http://localhost:4000' : '') + b.images[0])}" alt="${esc(b.titre)}">`
     : `<span>Pas de photo</span>`;
 
   return `
     <a class="annonce-carte${enAvant ? ' annonce-en-avant' : ''}" href="${urlAnnonce(b)}">
       <div class="annonce-image">
-        <span class="badge-type">${LIBELLES_TYPE[b.type_bien] || b.type_bien}</span>
+        <span class="badge-type">${esc(LIBELLES_TYPE[b.type_bien] || b.type_bien)}</span>
         ${enAvant ? '<span class="badge-coup-de-coeur">★ Coup de cœur</span>' : ''}
         ${image}
       </div>
       <div class="annonce-corps">
-        <h3>${b.titre}</h3>
-        <div class="annonce-lieu">${b.quartier ? b.quartier + ", " : ""}${b.ville}</div>
+        <h3>${esc(b.titre)}</h3>
+        <div class="annonce-lieu">${esc(b.quartier ? b.quartier + ", " : "")}${esc(b.ville)}</div>
         <div class="annonce-prix">${formaterPrix(b.prix)}</div>
         <div class="annonce-carac">
-          ${b.superficie ? `<span>${b.superficie} m²</span>` : ""}
-          ${b.chambres ? `<span>${b.chambres} ch.</span>` : ""}
-          ${b.salles_bain ? `<span>${b.salles_bain} SDB</span>` : ""}
+          ${b.superficie ? `<span>${esc(b.superficie)} m²</span>` : ""}
+          ${b.chambres ? `<span>${esc(b.chambres)} ch.</span>` : ""}
+          ${b.salles_bain ? `<span>${esc(b.salles_bain)} SDB</span>` : ""}
         </div>
       </div>
     </a>`;

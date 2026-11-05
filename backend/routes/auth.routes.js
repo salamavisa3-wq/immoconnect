@@ -7,6 +7,7 @@ const jwt = require("jsonwebtoken");
 const db = require("../db");
 const { FORFAITS } = require("../forfaits");
 const { authRequis } = require("../middleware/auth");
+const { validerInscription } = require("../lib/validation");
 
 const router = express.Router();
 
@@ -32,6 +33,9 @@ router.post("/register", async (req, res) => {
   if (!nom_complet || !email || !telephone || !mot_de_passe) {
     return res.status(400).json({ erreur: "Tous les champs obligatoires doivent être renseignés." });
   }
+  // Types, e-mail et tailles (audit 2026-11-05) : ces valeurs s'affichent dans l'écran d'administration.
+  const erreurInscription = validerInscription(req.body);
+  if (erreurInscription) return res.status(400).json({ erreur: erreurInscription });
   if (mot_de_passe.length < 6) {
     return res.status(400).json({ erreur: "Le mot de passe doit contenir au moins 6 caractères." });
   }

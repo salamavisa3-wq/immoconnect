@@ -8,6 +8,7 @@ const fs = require("fs");
 const streamifier = require("streamifier");
 const cloudinary = require("cloudinary").v2;
 const db = require("../db");
+const { validerChampsAnnonce } = require("../lib/validation");
 const { authRequis, compteActifRequis, adminRequis } = require("../middleware/auth");
 
 const router = express.Router();
@@ -159,18 +160,7 @@ router.get("/moi/liste", authRequis, async (req, res) => {
 
 // POST /api/biens — créer une annonce (compte actif + places de quota disponibles)
 router.post("/", authRequis, compteActifRequis, upload.array("images", 8), async (req, res) => {
-  const {
-    titre,
-    type_bien,
-    transaction_type,
-    ville,
-    quartier,
-    prix,
-    superficie,
-    chambres,
-    salles_bain,
-    description,
-  } = req.body;
+  const { titre, type_bien, transaction_type, ville, prix } = req.body;
 
   if (!titre || !type_bien || !transaction_type || !ville || !prix) {
     return res.status(400).json({ erreur: "Titre, type de bien, transaction, ville et prix sont obligatoires." });
@@ -178,6 +168,10 @@ router.post("/", authRequis, compteActifRequis, upload.array("images", 8), async
   if (!TYPES_VALIDES.includes(type_bien)) {
     return res.status(400).json({ erreur: "Type de bien invalide." });
   }
+  // Types et tailles des champs (audit 2026-11-05) : pas de HTML dans un champ numérique, textes bornés.
+  const validation = validerChampsAnnonce(req.body);
+  if (validation.erreur) return res.status(400).json({ erreur: validation.erreur });
+  const champs = validation.valeurs;
 
   // Quota : une place = une annonce active (en attente ou publiée).
   // Supprimée ou refusée → place libérée (non comptée ici).
@@ -206,16 +200,16 @@ router.post("/", authRequis, compteActifRequis, upload.array("images", 8), async
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'en_attente')`,
     [
       req.user.id,
-      titre.trim(),
+      champs.titre,
       type_bien,
       transaction_type,
-      ville.trim(),
-      quartier || null,
-      Number(prix),
-      superficie ? Number(superficie) : null,
-      chambres ? Number(chambres) : null,
-      salles_bain ? Number(salles_bain) : null,
-      description || null,
+      champs.ville,
+      champs.quartier,
+      champs.prix,
+      champs.superficie,
+      champs.chambres,
+      champs.salles_bain,
+      champs.description,
       JSON.stringify(images),
     ]
   );
@@ -238,10 +232,13 @@ router.put("/:id", authRequis, async (req, res) => {
   const champsModifiables = ["titre", "prix", "superficie", "chambres", "salles_bain", "description", "quartier", "ville"];
   const updates = [];
   const params = [];
+  // Même validation que la création : plus de texte dans les champs numériques (XSS via superficie, etc.).
+  const validation = validerChampsAnnonce(req.body, { partiel: true });
+  if (validation.erreur) return res.status(400).json({ erreur: validation.erreur });
   for (const champ of champsModifiables) {
-    if (req.body[champ] !== undefined) {
+    if (Object.prototype.hasOwnProperty.call(validation.valeurs, champ)) {
       updates.push(`${champ} = ?`);
-      params.push(req.body[champ]);
+      params.push(validation.valeurs[champ]);
     }
   }
   if (updates.length === 0) return res.status(400).json({ erreur: "Aucune donnée à modifier." });
