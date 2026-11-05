@@ -53,6 +53,11 @@ function formaterPrix(montant) {
   return Number(montant).toLocaleString("fr-FR") + " FCFA";
 }
 
+// Échappe une valeur saisie par un utilisateur avant de l'écrire dans du HTML (innerHTML) — audit 2026-11-05.
+function esc(valeur) {
+  return String(valeur ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 // Slug SEO déterministe d'un titre (accents, ponctuation, longueur)
 function slugifier(titre) {
   return String(titre || "")

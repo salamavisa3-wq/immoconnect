@@ -59,9 +59,9 @@ async function charger() {
         <tbody>
           ${biens.map(b => `
             <tr>
-              <td>${b.titre}</td>
-              <td>${LIBELLES_TYPE[b.type_bien] || b.type_bien}</td>
-              <td>${b.ville}</td>
+              <td>${esc(b.titre)}</td>
+              <td>${esc(LIBELLES_TYPE[b.type_bien] || b.type_bien)}</td>
+              <td>${esc(b.ville)}</td>
               <td>${formaterPrix(b.prix)}</td>
               <td style="display:flex;gap:8px;">
                 <button class="bouton bouton-primaire" style="padding:6px 12px;font-size:0.8rem;" onclick="modererAnnonce(${b.id}, 'publie')">Valider</button>
@@ -102,13 +102,13 @@ async function chargerPaiements() {
         <tbody>
           ${paiements.map(p => `
             <tr>
-              <td>${(p.declare_le || "").replace("T", " ")}</td>
-              <td>${p.nom_complet}<br><span class="aide">${p.email} · ${p.telephone}</span></td>
-              <td>${p.type === "inscription" ? `Inscription · ${LIBELLES_FORFAIT[p.montant] || p.montant + " FCFA"}` : `Mise en avant — ${p.bien_titre || "annonce #" + p.bien_id}`}</td>
+              <td>${esc((p.declare_le || "").replace("T", " "))}</td>
+              <td>${esc(p.nom_complet)}<br><span class="aide">${esc(p.email)} · ${esc(p.telephone)}</span></td>
+              <td>${p.type === "inscription" ? `Inscription · ${esc(LIBELLES_FORFAIT[p.montant] || p.montant + " FCFA")}` : `Mise en avant — ${esc(p.bien_titre || "annonce #" + p.bien_id)}`}</td>
               <td>${formaterPrix(p.montant)}</td>
-              <td>${LIBELLES_MOYEN[p.moyen_paiement] || p.moyen_paiement || "—"}</td>
-              <td><code>${p.transaction_id || "—"}</code></td>
-              <td><code>${p.reference}</code></td>
+              <td>${esc(LIBELLES_MOYEN[p.moyen_paiement] || p.moyen_paiement || "—")}</td>
+              <td><code>${esc(p.transaction_id || "—")}</code></td>
+              <td><code>${esc(p.reference)}</code></td>
               <td style="display:flex;gap:8px;">
                 <button class="bouton bouton-primaire" style="padding:6px 12px;font-size:0.8rem;" onclick="modererPaiement('${p.reference}', 'valider')">Valider</button>
                 <button class="bouton bouton-fantome" style="padding:6px 12px;font-size:0.8rem;color:var(--rouge-alerte);border-color:var(--rouge-alerte);" onclick="modererPaiement('${p.reference}', 'rejeter')">Rejeter</button>

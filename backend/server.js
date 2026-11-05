@@ -8,6 +8,7 @@ const fs = require("fs");
 const rateLimit = require("express-rate-limit");
 
 const db = require("./db");
+const { echapper, jsonSafe } = require("./lib/html");
 const { getEnv, estSurWorkers } = require("./cf-context");
 const authRoutes = require("./routes/auth.routes");
 const paymentsRoutes = require("./routes/payments.routes");
@@ -118,15 +119,8 @@ const LIBELLES_TYPE = {
 const formaterPrix = (montant) => Number(montant).toLocaleString("fr-FR") + " FCFA";
 const urlAnnonce = (b) => `/annonce/${slugifier(b.titre) || "annonce"}-${b.id}`;
 
-// Échappement HTML minimal pour les valeurs injectées côté serveur
-function echapper(texte) {
-  return String(texte ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+// echapper() (HTML) et jsonSafe() (JSON-LD) viennent de lib/html.js : toute valeur saisie par un utilisateur
+// doit passer par l'une des deux avant d'être écrite dans une page.
 
 // --- SSR des grilles d'annonces (SEO) : miroir de frontend/js/annonces.html + categorie.js ---
 // Injecte le contenu réel des listings (cartes + JSON-LD ItemList) dans le HTML servi,
@@ -168,12 +162,12 @@ function carteAnnonceHtml(b) {
     b.mise_en_avant === 1 &&
     (!b.mise_en_avant_jusqu_au || new Date(b.mise_en_avant_jusqu_au) > new Date());
   const image = images[0]
-    ? `<img src="${images[0].startsWith("http") ? images[0] : `https://sakeurimmo.com${images[0]}`}" alt="${echapper(b.titre)}" loading="lazy">`
+    ? `<img src="${echapper(images[0].startsWith("http") ? images[0] : `https://sakeurimmo.com${images[0]}`)}" alt="${echapper(b.titre)}" loading="lazy">`
     : `<span>Pas de photo</span>`;
   return `
     <a class="annonce-carte${enAvant ? " annonce-en-avant" : ""}" href="${urlAnnonce(b)}">
       <div class="annonce-image">
-        <span class="badge-type">${LIBELLES_TYPE[b.type_bien] || b.type_bien}</span>
+        <span class="badge-type">${echapper(LIBELLES_TYPE[b.type_bien] || b.type_bien)}</span>
         ${enAvant ? '<span class="badge-coup-de-coeur">★ Coup de cœur</span>' : ""}
         ${image}
       </div>
@@ -182,9 +176,9 @@ function carteAnnonceHtml(b) {
         <div class="annonce-lieu">${b.quartier ? echapper(b.quartier) + ", " : ""}${echapper(b.ville)}</div>
         <div class="annonce-prix">${formaterPrix(b.prix)}</div>
         <div class="annonce-carac">
-          ${b.superficie ? `<span>${b.superficie} m²</span>` : ""}
-          ${b.chambres ? `<span>${b.chambres} ch.</span>` : ""}
-          ${b.salles_bain ? `<span>${b.salles_bain} SDB</span>` : ""}
+          ${b.superficie ? `<span>${echapper(b.superficie)} m²</span>` : ""}
+          ${b.chambres ? `<span>${echapper(b.chambres)} ch.</span>` : ""}
+          ${b.salles_bain ? `<span>${echapper(b.salles_bain)} SDB</span>` : ""}
         </div>
       </div>
     </a>`;
@@ -219,7 +213,7 @@ async function listerBiensPublies({ type, ville } = {}) {
 
 // JSON-LD ItemList des annonces (miroir de injecterSchemaItemList côté client)
 function jsonLdItemList(biens, canonicalUrl) {
-  return JSON.stringify({
+  return jsonSafe({
     "@context": "https://schema.org",
     "@type": "ItemList",
     "@id": `${canonicalUrl}#listing`,
@@ -311,7 +305,7 @@ function jsonLdRealEstateListing(b, canonicalUrl) {
       unitCode: "MTK",
     };
   }
-  return JSON.stringify(data, null, 2);
+  return jsonSafe(data, 2);
 }
 
 // Rendu serveur de la fiche : SEO (title/desc/canonical/og/twitter) + contenu statique de
@@ -344,7 +338,7 @@ async function rendreFicheAnnonce(b) {
   const image = images[0] ? (images[0].startsWith("http") ? images[0] : `https://sakeurimmo.com${images[0]}`) : "https://sakeurimmo.com/images/og-image.jpg";
   const altText = `${echapper(b.titre)} — ${echapper(b.quartier ? b.quartier + ", " : "")}${echapper(b.ville)}`;
   const jsonLd = jsonLdRealEstateListing(b, canonicalUrl);
-  const fil = JSON.stringify({
+  const fil = jsonSafe({
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
@@ -352,7 +346,7 @@ async function rendreFicheAnnonce(b) {
       { "@type": "ListItem", position: 2, name: "Annonces", item: "https://sakeurimmo.com/annonces.html" },
       { "@type": "ListItem", position: 3, name: b.titre, item: canonicalUrl },
     ],
-  }).replace(/</g, "\u003c");
+  });
   // Annonces similaires (maillage interne) : même ville d'abord, puis même type de bien — jamais bloquant pour la fiche
   let similairesHtml = "";
   try {
@@ -368,7 +362,7 @@ async function rendreFicheAnnonce(b) {
     ? `<div class="fiche-video" style="margin:22px 0;"><video controls preload="none" playsinline poster="${echapper(image)}" style="width:100%;height:auto;border-radius:12px;background:#000;" aria-label="Vidéo : ${echapper(b.titre)}"><source src="${video.src}" type="video/mp4"></video></div>`
     : "";
   const jsonLdVideo = video
-    ? JSON.stringify({
+    ? jsonSafe({
         "@context": "https://schema.org",
         "@type": "VideoObject",
         "@id": `${canonicalUrl}#video`,
@@ -461,10 +455,10 @@ async function rendreFicheAnnonce(b) {
     .replace(/(<meta property="og:url" id="og-url-bien" content=")[^"]*(">)/, `$1${canonicalUrl}$2`)
     .replace(/(<meta property="og:title" content=")[^"]*(">)/, `$1${echapper(titreSeo)}$2`)
     .replace(/(<meta property="og:description" content=")[^"]*(">)/, `$1${echapper(descSeo)}$2`)
-    .replace(/(<meta property="og:image" content=")[^"]*(">)/, `$1${image}$2`)
+    .replace(/(<meta property="og:image" content=")[^"]*(">)/, `$1${echapper(image)}$2`)
     .replace(/(<meta name="twitter:title" content=")[^"]*(">)/, `$1${echapper(titreSeo)}$2`)
     .replace(/(<meta name="twitter:description" content=")[^"]*(">)/, `$1${echapper(descSeo)}$2`)
-    .replace(/(<meta name="twitter:image" content=")[^"]*(">)/, `$1${image}$2`)
+    .replace(/(<meta name="twitter:image" content=")[^"]*(">)/, `$1${echapper(image)}$2`)
     .replace(/<\/head>/, `  <script type="application/ld+json">${jsonLd}</script>\n  <script type="application/ld+json">${fil}</script>\n${jsonLdVideo ? `  <script type="application/ld+json">${jsonLdVideo}</script>\n` : ""}</head>`)
     .replace(/\n    Chargement...\n/, `\n${contenu}\n`);
 }
@@ -753,8 +747,14 @@ app.use((err, req, res, next) => {
 // interdit l'I/O asynchrone en dehors d'un handler. Les échecs d'initialisation sont
 // donc journalisés via le gestionnaire d'erreurs Express (plus bas), au 1er accès réel.
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-  console.log(`✅ SakeurImmo API démarrée sur http://localhost:${PORT}`);
-});
+// SAKEURIMMO_NO_LISTEN=1 : les tests chargent ce module sans ouvrir de port (jamais défini en production).
+if (process.env.SAKEURIMMO_NO_LISTEN !== "1") {
+  app.listen(PORT, () => {
+    console.log(`✅ SakeurImmo API démarrée sur http://localhost:${PORT}`);
+  });
+}
+
+// Exposé pour les tests de régression XSS (test/rendu-securise.test.js).
+app.locals.rendu = { carteAnnonceHtml, jsonLdItemList, jsonLdRealEstateListing };
 
 module.exports = app;

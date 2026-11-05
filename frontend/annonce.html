@@ -58,7 +58,7 @@ async function chargerDetail() {
     const prixTxt = formaterPrix(b.prix);
     const typeTxt = LIBELLES_TYPE[b.type_bien] || b.type_bien;
     const transactionTxt = b.transaction_type === "vente" ? "à vendre" : "à louer";
-    const villeTxt = b.ville ? ` à ${b.ville}` : "";
+    const villeTxt = b.ville ? " à " + b.ville : ""; // texte brut (titre/meta via API DOM) : jamais écrit dans du HTML sans esc()
     // Le libellé type contient déjà la transaction pour la plupart des types → évite le doublon « à vendre à vendre »
     const titreType = /à vendre|à louer/.test(typeTxt) ? typeTxt : `${typeTxt} ${transactionTxt}`;
     const titreSeo = `${titreType}${villeTxt} · ${prixTxt} — SakeurImmo`;
@@ -81,13 +81,13 @@ async function chargerDetail() {
     }
 
     // Met à jour les alt des images côté client pour rester cohérent
-    const altText = `${b.titre} — ${b.quartier ? b.quartier + ", " : ""}${b.ville}`;
+    const altText = b.titre + " — " + (b.quartier ? b.quartier + ", " : "") + b.ville; // texte brut : jamais écrit dans du HTML sans esc()
     conteneur.querySelectorAll("img").forEach((img) => img.setAttribute("alt", altText));
 
     // Si le contenu SSR est absent (ancienne URL ?id=), on le génère côté client
     if (!conteneur.querySelector("h1")) {
       const imagesHtml = (b.images.length ? b.images : [null]).map(img => img
-        ? `<img src="${baseUploads}${img}" alt="${altText}" style="width:220px;height:150px;object-fit:cover;border-radius:6px;border:1px solid var(--sable-fonce);">`
+        ? `<img src="${esc(baseUploads + img)}" alt="${esc(altText)}" style="width:220px;height:150px;object-fit:cover;border-radius:6px;border:1px solid var(--sable-fonce);">`
         : `<div style="width:220px;height:150px;background:var(--bleu-nuit);border-radius:6px;display:flex;align-items:center;justify-content:center;color:rgba(243,236,219,0.5);font-size:0.8rem;">Pas de photo</div>`
       ).join("");
 
@@ -96,25 +96,25 @@ async function chargerDetail() {
         ${b.mise_en_avant === 1 && (!b.mise_en_avant_jusqu_au || new Date(b.mise_en_avant_jusqu_au) > new Date())
           ? '<span class="etiquette etiquette-attente" style="display:inline-block;margin-bottom:10px;">★ Coup de cœur</span>'
           : ""}
-        <h1>${b.titre}</h1>
-        <p style="color:var(--texte-clair);margin-top:-6px;">${b.quartier ? b.quartier + ", " : ""}${b.ville}</p>
+        <h1>${esc(b.titre)}</h1>
+        <p style="color:var(--texte-clair);margin-top:-6px;">${esc(b.quartier ? b.quartier + ", " : "")}${esc(b.ville)}</p>
 
         <div style="display:flex;gap:10px;flex-wrap:wrap;margin:22px 0;">${imagesHtml}</div>
 
         <div class="cachet-carte" style="max-width:340px;margin:0 0 28px;">
           <div class="prix">${formaterPrix(b.prix)}</div>
           <ul class="cachet-liste">
-            <li><span>Type</span><span>${LIBELLES_TYPE[b.type_bien] || b.type_bien}</span></li>
+            <li><span>Type</span><span>${esc(LIBELLES_TYPE[b.type_bien] || b.type_bien)}</span></li>
             <li><span>Transaction</span><span>${b.transaction_type === "vente" ? "Vente" : "Location"}</span></li>
-            ${b.superficie ? `<li><span>Superficie</span><span>${b.superficie} m²</span></li>` : ""}
-            ${b.chambres ? `<li><span>Chambres</span><span>${b.chambres}</span></li>` : ""}
-            ${b.salles_bain ? `<li><span>Salles de bain</span><span>${b.salles_bain}</span></li>` : ""}
+            ${b.superficie ? `<li><span>Superficie</span><span>${esc(b.superficie)} m²</span></li>` : ""}
+            ${b.chambres ? `<li><span>Chambres</span><span>${esc(b.chambres)}</span></li>` : ""}
+            ${b.salles_bain ? `<li><span>Salles de bain</span><span>${esc(b.salles_bain)}</span></li>` : ""}
             <li><span>Vues</span><span>${b.vues}</span></li>
           </ul>
         </div>
 
         <h3>Description</h3>
-        <p style="color:var(--texte);line-height:1.7;">${b.description ? b.description.replace(/\n/g, "<br>") : "Aucune description fournie."}</p>
+        <p style="color:var(--texte);line-height:1.7;">${b.description ? esc(b.description).replace(/\n/g, "<br>") : "Aucune description fournie."}</p>
 
         <div style="margin-top:32px;background:var(--blanc);border:1px solid var(--sable-fonce);border-radius:8px;padding:30px;">
           <h3 style="margin-top:0;">Contacter le propriétaire</h3>

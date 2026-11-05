@@ -181,7 +181,7 @@ async function chargerProfil() {
     } else if (paramPaiement === "succes") {
       banniere.innerHTML = `<div class="message-succes">Compte activé avec succès ! Vous pouvez maintenant publier des annonces.</div>`;
     } else {
-      banniere.innerHTML = `<div class="message-succes">Compte actif — Bienvenue ${user.nom_complet.split(" ")[0]}, vous pouvez publier vos annonces.</div>`;
+      banniere.innerHTML = `<div class="message-succes">Compte actif — Bienvenue ${escHtml(user.nom_complet.split(" ")[0])}, vous pouvez publier vos annonces.</div>`;
     }
     majPlacesRestantes();
   } catch (err) {
@@ -258,9 +258,9 @@ async function chargerMesAnnonces() {
       }
       return `
         <tr>
-          <td>${b.titre}</td>
+          <td>${escHtml(b.titre)}</td>
           <td>${LIBELLES_TYPE[b.type_bien] || b.type_bien}</td>
-          <td>${b.ville}</td>
+          <td>${escHtml(b.ville)}</td>
           <td>${formaterPrix(b.prix)}</td>
           <td><span class="etiquette ${etiquettes[b.statut]}">${libellesStatut[b.statut]}</span></td>
           <td>${b.vues}</td>
