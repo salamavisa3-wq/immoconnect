@@ -320,7 +320,7 @@ function coupeAuMot(txt, max) {
 // Vidéos hébergées dans frontend/videos, rattachées à une annonce par son id.
 // Rendu côté serveur : lecteur natif + VideoObject JSON-LD sur la fiche.
 const VIDEOS_ANNONCES = {
-  18: { src: "/videos/terrain-nguekhokh-2-3-ha.mp4", duree: "PT1M10S", date: "2026-10-30" },
+  18: { src: "/videos/terrain-nguekhokh-2-3-ha.mp4", duree: "PT1M10S", date: "2026-10-30T00:00:00+00:00" },
 };
 
 async function rendreFicheAnnonce(b) {
