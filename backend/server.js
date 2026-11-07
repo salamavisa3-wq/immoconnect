@@ -710,6 +710,14 @@ app.get("/annonce/:slugId", async (req, res) => {
   }
 });
 
+// Accueil : "/" passe par le Worker (run_worker_first) pour recevoir la redirection HTTPS/www et les
+// en-têtes de sécurité ; en Node classique express.static le sert avant d'arriver ici.
+app.get("/", async (req, res, next) => {
+  const html = await lireAsset("index.html");
+  if (html === null) return next();
+  res.set("Cache-Control", "public, max-age=300").type("html").send(html);
+});
+
 // Pages statiques .html (SEO) : sur Workers l'edge Static Assets sert ces fichiers en
 // "clean-links" (/x.html → 307 → /x) alors que canonical, sitemap et liens internes
 // utilisent la forme /x.html. Ce handler — atteint pour les chemins routés via

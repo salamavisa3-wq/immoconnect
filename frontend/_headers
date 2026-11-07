@@ -1,0 +1,11 @@
+# À placer à la racine du dossier d'assets (ex. frontend/_headers). Servi par la couche
+# Static Assets de Cloudflare Workers ; ne s'applique pas aux réponses générées par le Worker
+# (celles-ci reçoivent les mêmes en-têtes par edge-wrapper.mjs).
+/*
+  Strict-Transport-Security: max-age=15552000
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  # CSP en mode rapport seulement : à durcir plus tard, après test des pages.
+  Content-Security-Policy-Report-Only: default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' https: data: blob:; frame-ancestors 'self'
