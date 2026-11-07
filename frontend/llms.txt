@@ -10,6 +10,7 @@
 - [Blog immobilier](https://sakeurimmo.com/blog.html) : articles par localité (Pognène, ZAC de Thiès, Diakhaw, Mboro, Kédougou…).
 - [Acheter depuis l'étranger (Diaspora)](https://sakeurimmo.com/diaspora.html) : guide de la diaspora — procuration, notaire, transfert d'argent.
 - [Contact](https://sakeurimmo.com/contact.html) : coordonnées de la plateforme.
+- [Immobilier par région au Sénégal](https://sakeurimmo.com/regions-du-senegal.html) : les 14 régions du pays, chef-lieu et atouts immobiliers de chacune.
 
 ## Pages par ville
 
