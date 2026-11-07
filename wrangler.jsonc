@@ -42,7 +42,9 @@
       "/diaspora.html",
       "/diaspora",
       "/contact.html",
-      "/contact"
+      "/contact",
+      "/regions-du-senegal.html",
+      "/regions-du-senegal"
     ]
   },
   "routes": [

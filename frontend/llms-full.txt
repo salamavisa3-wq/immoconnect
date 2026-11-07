@@ -21,7 +21,9 @@ Les annonces sont consultables sur https://sakeurimmo.com/annonces.html, filtrab
 
 Les pages par type de bien : https://sakeurimmo.com/categorie/terrains-a-vendre.html, /categorie/appartements-a-vendre.html, /categorie/appartements-a-louer.html, /categorie/appartements-meubles.html, /categorie/maisons-a-vendre.html, /categorie/maisons-a-louer.html, /categorie/villas-a-vendre.html, /categorie/villas-a-louer.html, /categorie/commerces-a-vendre.html, /categorie/commerces-a-louer.html, /categorie/terrains-a-louer.html, /categorie/immeubles-a-vendre.html, /categorie/immeubles-a-louer.html.
 
-## Pages par ville
+## Pages par région et par ville
+
+- Les 14 régions du Sénégal : https://sakeurimmo.com/regions-du-senegal.html
 
 - Immobilier à Dakar : https://sakeurimmo.com/villes/immobilier-a-dakar.html
 - Immobilier à Thiès : https://sakeurimmo.com/villes/immobilier-a-thies.html
