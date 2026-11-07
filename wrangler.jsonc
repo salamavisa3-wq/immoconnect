@@ -17,6 +17,8 @@
     // fichier statique du même nom existe dans frontend/ ; tout le reste (CSS/JS/
     // images/autres pages) est servi directement par l'edge, sans invoquer le Worker.
     "run_worker_first": [
+      // Accueil : sans ça l'edge le sert sans passer par le Worker (pas de redirection HTTPS/www).
+      "/",
       "/annonces.html",
       // Forme sans extension des pages indexables : le Worker la redirige 301 vers .html
       // (même traitement que /blog → /blog.html), pour qu'aucune URL duplicate ne soit
@@ -44,7 +46,14 @@
       "/contact.html",
       "/contact",
       "/regions-du-senegal.html",
-      "/regions-du-senegal"
+      "/regions-du-senegal",
+      // Pages de compte liées depuis l'en-tête de chaque page : même raison (éviter le 307).
+      "/inscription.html",
+      "/inscription",
+      "/connexion.html",
+      "/connexion",
+      "/tableau-de-bord.html",
+      "/tableau-de-bord"
     ]
   },
   "routes": [
