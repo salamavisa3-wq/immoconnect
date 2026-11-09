@@ -1,6 +1,5 @@
 User-agent: *
 Allow: /
-Disallow: /api/contacts/direct/
 
 Sitemap: https://sakeurimmo.com/sitemap.xml
 
